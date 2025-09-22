@@ -1,3 +1,11 @@
+# Arquivos sensíveis e que não devem ir para o GitHub
+.env
+app.py
+banco_atualizado.sql
+cadastrar_massoterapeuta_offline.py
+email_api.py
+# Ignorar arquivo de dump do banco de dados
+banco_atualizado.sql
 # Arquivos e pastas sensíveis a serem ignorados pelo Git
 Back_end/.env
 Back_end/__pycache__/
