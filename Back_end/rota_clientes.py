@@ -13,8 +13,90 @@ from .cliente import (
 from Back_end.database import get_connection
 
 rota_clientes = Blueprint('rota_clientes', __name__)
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
+from datetime import datetime
+from .cliente import (
+    cadastrar_cliente,
+    verificar_login,
+    cadastrar_agendamento,
+    atualizar_conta,
+    excluir_cliente,
+    historico_sessoes_cliente,
+    buscar_cliente_por_id
+)
+from Back_end.database import get_connection
+
+rota_clientes = Blueprint('rota_clientes', __name__)
+
+from Back_end.email_api import send_email, generate_confirmation_token, verify_confirmation_token
+import os
+from werkzeug.security import generate_password_hash
+# -------------------------------
+# ROTA: Confirmação de e-mail do cliente
+@rota_clientes.route('/api/clientes/confirmar-email/<token>', methods=['POST'])
+def confirmar_email(token):
+    from Back_end.email_api import verify_confirmation_token
+    from . import database
+    import traceback
+    try:
+        email = verify_confirmation_token(token)
+        if not email:
+            print(f"[CONFIRMAÇÃO] Token inválido ou expirado: {token}")
+            return {"erro": "Token inválido ou expirado."}, 400
+        # Atualiza email_confirmado no banco
+        conn = database.get_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE cliente SET email_confirmado=TRUE WHERE email=%s", (email,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        print(f"[CONFIRMAÇÃO] E-mail confirmado: {email}")
+        return {"mensagem": "E-mail confirmado com sucesso!"}, 200
+    except Exception as e:
+        print(f"[CONFIRMAÇÃO] Erro ao confirmar: {str(e)}\n{traceback.format_exc()}")
+        return {"erro": f"Erro ao confirmar e-mail: {str(e)}"}, 400
 
 # -------------------------------
+# ROTA: Solicitar recuperação de senha
+@rota_clientes.route('/api/clientes/recuperar-senha', methods=['POST'])
+def recuperar_senha():
+    data = request.get_json()
+    email = data.get('email')
+    if not email:
+        return jsonify({"erro": "Email é obrigatório."}), 400
+    # Gera token de redefinição
+    token = generate_confirmation_token(email)
+    reset_url = f"{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/redefinir-senha?token={token}"
+    subject = "Recuperação de senha - Massoterapia TCC"
+    content = f"Olá! Para redefinir sua senha, clique no link: {reset_url}\nEste link expira em 24 horas."
+    status, resp = send_email(email, subject, content)
+    if status == 202:
+        return jsonify({"mensagem": "Email de recuperação enviado."})
+    else:
+        return jsonify({"erro": "Falha ao enviar email."}), 500
+
+# -------------------------------
+# ROTA: Redefinir senha
+@rota_clientes.route('/api/clientes/redefinir-senha', methods=['POST'])
+def redefinir_senha():
+    data = request.get_json()
+    token = data.get('token')
+    nova_senha = data.get('nova_senha')
+    if not token or not nova_senha:
+        return jsonify({"erro": "Token e nova senha são obrigatórios."}), 400
+    email = verify_confirmation_token(token)
+    if not email:
+        return jsonify({"erro": "Token inválido ou expirado."}), 400
+    # Atualiza senha no banco
+    conn = get_connection()
+    cur = conn.cursor()
+    hashed = generate_password_hash(nova_senha)
+    cur.execute("UPDATE cliente SET senha_hash=%s WHERE email=%s", (hashed, email))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"mensagem": "Senha redefinida com sucesso."})
 # ROTA: Cadastrar cliente
 # -------------------------------
 @rota_clientes.route('/api/clientes', methods=['POST'])
@@ -22,13 +104,15 @@ def api_cadastrar_cliente():
     data = request.get_json()
     if not data or not all(k in data for k in ("nome", "telefone", "sexo", "data_nascimento", "email", "senha")):
         return jsonify({"erro": "Campos obrigatórios faltando"}), 400
-    cliente_id = cadastrar_cliente(
+    resultado = cadastrar_cliente(
         data['nome'], data['telefone'], data['sexo'],
         data['data_nascimento'], data['email'], data['senha']
     )
-    if not cliente_id:
+    if isinstance(resultado, dict) and "erro" in resultado:
+        return jsonify({"erro": resultado["erro"]}), 400
+    if not resultado:
         return jsonify({"erro": "Falha ao cadastrar cliente"}), 400
-    return jsonify({"mensagem": "Cliente cadastrado com sucesso", "id": cliente_id}), 201
+    return jsonify({"mensagem": "Cadastro realizado! Confirme seu e-mail para acessar o sistema.", "id": resultado}), 201
 
 # -------------------------------
 # ROTA: Login do cliente
@@ -46,7 +130,7 @@ def api_login():
             "usuario": usuario,
             "token": token
         })
-    return jsonify({"erro": "Email ou senha inválidos"}), 401
+    return jsonify({"erro": "Email, senha inválidos ou e-mail não confirmado."}), 401
 
 # -------------------------------
 # ROTA: Criar agendamento

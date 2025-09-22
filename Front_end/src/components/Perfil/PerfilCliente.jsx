@@ -7,8 +7,10 @@ function PerfilCliente({ usuario, token }) {
   const [editando, setEditando] = useState(false);
   const [nome, setNome] = useState(usuario.nome);
   const [telefone, setTelefone] = useState(usuario.telefone);
+  // ...
 
   const salvar = async () => {
+  // ...
     try {
       const resp = await fetch("http://localhost:5000/api/clientes", {
         method: "PUT",
@@ -33,8 +35,9 @@ function PerfilCliente({ usuario, token }) {
   };
 
   async function excluirConta() {
+  // ...
     const authToken = token || usuario?.token || localStorage.getItem("token");
-    if (!window.confirm("Tem certeza que deseja excluir sua conta? Esta ação é irreversível.")) return;
+  if (!window.confirm("Tem certeza que deseja excluir sua conta? Esta ação é irreversível.")) return;
     try {
       const resp = await fetch("http://localhost:5000/api/clientes", {
         method: "DELETE",
@@ -43,17 +46,19 @@ function PerfilCliente({ usuario, token }) {
       if (resp.ok) {
         alert("Conta excluída com sucesso!");
         localStorage.removeItem("token");
-        window.location.reload();
+        setTimeout(() => window.location.reload(), 1200);
       } else {
         alert("Erro ao excluir conta.");
       }
     } catch (err) {
-      alert("Erro ao excluir conta.");
+      setMensagem("Erro ao excluir conta.");
+      setMensagemTipo("erro");
     }
   }
 
   return (
     <div className="perfil-container">
+      {/* ... */}
       {editando ? (
         <div>
           <label>

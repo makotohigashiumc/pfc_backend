@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Main from "./components/Main";
+import Footer from "./components/Footer";
 import "./App.css";
 
 function App() {
@@ -28,7 +29,12 @@ function App() {
     localStorage.removeItem("usuario");
   };
 
-  return <Main usuario={usuario} login={login} logout={logout} />;
+  return (
+    <>
+      <Main usuario={usuario} login={login} logout={logout} />
+      <Footer />
+    </>
+  );
 }
 
 export default App;

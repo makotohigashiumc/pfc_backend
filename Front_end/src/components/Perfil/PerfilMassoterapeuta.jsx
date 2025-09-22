@@ -10,8 +10,10 @@ function PerfilMassoterapeuta({ usuario, token }) {
   const [email, setEmail] = useState(usuario.email);
   const [especialidade, setEspecialidade] = useState(usuario.especialidade || "");
   const [registro, setRegistro] = useState(usuario.registro_profissional || "");
+  // ...
 
   const salvar = async () => {
+  // ...
     try {
       const resp = await fetch("http://localhost:5000/api/massoterapeuta/me", {
         method: "PUT",
@@ -38,6 +40,7 @@ function PerfilMassoterapeuta({ usuario, token }) {
   return (
     <div className="perfil-container">
       <h2>Perfil do Massoterapeuta</h2>
+      {/* ... */}
       {editando ? (
         <div>
           <label>

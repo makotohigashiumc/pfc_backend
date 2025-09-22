@@ -22,25 +22,38 @@ def cadastrar_cliente(nome, telefone, sexo, data_nascimento, email, senha):
         cursor = None
         try:
             cursor = conn.cursor()
+            # Verifica email duplicado
             cursor.execute("SELECT id FROM cliente WHERE email = %s", (email,))
             if cursor.fetchone():
                 print(f"Erro: Email '{email}' já cadastrado")
-                return None
+                return {"erro": "Já existe uma conta com este e-mail."}
+            # Verifica telefone duplicado
+            cursor.execute("SELECT id FROM cliente WHERE telefone = %s", (telefone,))
+            if cursor.fetchone():
+                print(f"Erro: Telefone '{telefone}' já cadastrado")
+                return {"erro": "Já existe uma conta com este número de telefone."}
             senha_hash = generate_password_hash(senha)
             sql = """
-                INSERT INTO cliente (nome, telefone, sexo, data_nascimento, email, senha_hash)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO cliente (nome, telefone, sexo, data_nascimento, email, senha_hash, email_confirmado)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id;
             """
-            cursor.execute(sql, (nome, telefone, sexo, data_nascimento, email, senha_hash))
+            cursor.execute(sql, (nome, telefone, sexo, data_nascimento, email, senha_hash, False))
             cliente_id = cursor.fetchone()[0]
             conn.commit()
             print(f"Cliente inserido com sucesso! ID: {cliente_id}")
+            # Envia e-mail de confirmação
+            try:
+                from Back_end.email_api import send_confirmation_email
+                status, resp = send_confirmation_email(email)
+                print(f"Status envio e-mail: {status}, resposta: {resp}")
+            except Exception as e:
+                print(f"Erro ao enviar e-mail de confirmação: {e}")
             return cliente_id
         except Exception as e:
             conn.rollback()
             print(f"Erro ao inserir cliente: {e}")
-            return None
+            return {"erro": "Falha ao cadastrar cliente."}
         finally:
             if cursor:
                 cursor.close()
@@ -59,6 +72,9 @@ def verificar_login(email, senha):
             cursor.execute("SELECT * FROM cliente WHERE email = %s", (email,))
             usuario = cursor.fetchone()
             if usuario and check_password_hash(usuario['senha_hash'], senha):
+                if not usuario.get('email_confirmado', False):
+                    print("Email não confirmado. Bloqueando login.")
+                    return None
                 usuario.pop('senha_hash')
                 return usuario
             return None
@@ -137,6 +153,21 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, status='marc
             agendamento = cursor.fetchone()
             conn.commit()
             print(f"Agendamento inserido com sucesso: {agendamento}")
+            # Envia email de notificação ao cliente
+            try:
+                from Back_end.email_api import sendgrid_email_api_massoterapia
+                # Buscar email do cliente
+                cursor.execute("SELECT email, nome FROM cliente WHERE id = %s", (cliente_id,))
+                cliente = cursor.fetchone()
+                if cliente:
+                    destinatario = cliente[0]
+                    nome_cliente = cliente[1]
+                    assunto = "Confirmação de Agendamento"
+                    conteudo = f"Olá {nome_cliente}, seu agendamento foi realizado para {data_hora}."
+                    status, resp = sendgrid_email_api_massoterapia(destinatario, assunto, conteudo)
+                    print(f"Status envio e-mail agendamento: {status}, resposta: {resp}")
+            except Exception as e:
+                print(f"Erro ao enviar e-mail de agendamento: {e}")
             return agendamento
         except Exception as e:
             conn.rollback()

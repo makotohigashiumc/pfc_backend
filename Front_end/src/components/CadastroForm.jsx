@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 
 function CadastroForm({ voltarLogin }) {
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   // -------------------------------
   // Estados para os campos do cliente
   // -------------------------------
@@ -14,6 +15,7 @@ function CadastroForm({ voltarLogin }) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false); // evita duplo clique
+  // ...
 
   // -------------------------------
   // Função para submeter cadastro
@@ -27,7 +29,7 @@ function CadastroForm({ voltarLogin }) {
       return;
     }
 
-    setLoading(true);
+  setLoading(true);
 
     try {
       const resp = await fetch("http://localhost:5000/api/clientes", {
@@ -51,9 +53,7 @@ function CadastroForm({ voltarLogin }) {
         setDataNascimento("");
         setEmail("");
         setSenha("");
-
-        alert("Cadastro realizado com sucesso! Agora faça login.");
-        voltarLogin(); // volta para tela de login
+        // Não volta para tela de login automaticamente
       } else {
         // Lê resposta de erro do backend
         let errMsg;
@@ -63,7 +63,7 @@ function CadastroForm({ voltarLogin }) {
         } catch {
           errMsg = await resp.text();
         }
-        alert("Erro ao cadastrar: " + errMsg);
+        alert(errMsg);
       }
     } catch (err) {
       console.error("Erro no cadastro:", err);
@@ -78,7 +78,8 @@ function CadastroForm({ voltarLogin }) {
   // -------------------------------
   return (
     <div className="form-container">
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="cadastro-form">
+        {/* ... */}
         <h2>Cadastro de Cliente</h2>
 
         <label>
@@ -133,17 +134,51 @@ function CadastroForm({ voltarLogin }) {
           />
         </label>
 
-        <label>
+        <label style={{ position: 'relative', display: 'block' }}>
           Senha:
-          <input
-            type="password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            placeholder="Digite sua senha"
-            minLength={6}
-            required
-          />
-        </label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={mostrarSenha ? "text" : "password"}
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              placeholder="Digite sua senha"
+              minLength={6}
+              required
+              style={{
+                paddingRight: '38px',
+                width: '100%',
+                borderRadius: '8px',
+                border: '1px solid #ccc',
+                fontSize: '1rem',
+                boxSizing: 'border-box',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+              }}
+              onFocus={e => e.target.style.borderColor = '#1976d2'}
+              onBlur={e => e.target.style.borderColor = '#ccc'}
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarSenha((v) => !v)}
+              style={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 18,
+                color: '#888',
+                padding: 0
+              }}
+              tabIndex={-1}
+              aria-label={mostrarSenha ? 'Esconder senha' : 'Mostrar senha'}
+            >
+              {mostrarSenha ? '🙈' : '👁️'}
+            </button>
+          </div>
+  </label>
 
         <button type="submit" disabled={loading}>
           {loading ? "Cadastrando..." : "Cadastrar"}
@@ -161,6 +196,9 @@ function CadastroForm({ voltarLogin }) {
             Login
           </a>
         </p>
+          <div style={{ marginTop: "2rem", color: "#0077b6", fontWeight: "bold" }}>
+            Após o cadastro, você receberá um e-mail para confirmar sua conta antes de acessar o sistema.
+          </div>
       </form>
     </div>
   );

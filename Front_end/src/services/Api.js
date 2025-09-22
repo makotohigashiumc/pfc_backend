@@ -34,3 +34,25 @@ export async function cadastrarCliente(dados) {
   if (!resp.ok) throw new Error("Cadastro falhou");
   return resp.json();
 }
+
+// Recuperação de senha
+export async function recuperarSenha(email) {
+  const resp = await fetch(`${API_BASE}/clientes/recuperar-senha`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!resp.ok) throw new Error("Erro ao solicitar recuperação de senha");
+  return resp.json();
+}
+
+// Redefinição de senha
+export async function redefinirSenha(token, nova_senha) {
+  const resp = await fetch(`${API_BASE}/clientes/redefinir-senha`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, nova_senha }),
+  });
+  if (!resp.ok) throw new Error("Erro ao redefinir senha");
+  return resp.json();
+}

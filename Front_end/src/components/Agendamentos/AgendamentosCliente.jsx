@@ -1,14 +1,72 @@
 // AgendamentosCliente.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 function AgendamentosCliente({ usuario, token }) {
+  // Gera lista de horários do dia selecionado, marcando ocupados
+  const gerarHorariosDiaSelecionado = () => {
+    if (!dataHora) return [];
+    const horarios = [];
+    const base = new Date(dataHora);
+    base.setHours(8, 30, 0, 0);
+    for (let h = 8; h <= 20; h++) {
+      for (let m of [30, 0]) {
+        if (h === 8 && m === 0) continue;
+        if (h === 20 && m === 30) break;
+        const horario = new Date(base);
+        horario.setHours(h, m, 0, 0);
+        const ocupado = horariosOcupados.some((ho) =>
+          ho.getFullYear() === horario.getFullYear() &&
+          ho.getMonth() === horario.getMonth() &&
+          ho.getDate() === horario.getDate() &&
+          ho.getHours() === horario.getHours() &&
+          ho.getMinutes() === horario.getMinutes()
+        );
+        horarios.push({ horario, ocupado });
+        if (h === 20 && m === 0) break;
+      }
+    }
+    return horarios;
+  };
   const authToken = token || usuario?.token || localStorage.getItem("token");
   const [dataHora, setDataHora] = useState(null);
   const [historico, setHistorico] = useState([]);
   const [massoterapeutas, setMassoterapeutas] = useState([]);
   const [massoterapeutaSelecionado, setMassoterapeutaSelecionado] = useState("");
+  const [horariosOcupados, setHorariosOcupados] = useState([]); // lista de Date
+  // Buscar horários ocupados do massoterapeuta selecionado
+  const fetchHorariosOcupados = useCallback(async (data) => {
+    if (!massoterapeutaSelecionado) return setHorariosOcupados([]);
+    try {
+      const resp = await fetch(`http://localhost:5000/api/massoterapeuta/horarios_ocupados/${massoterapeutaSelecionado}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        // Converter para array de Date
+        setHorariosOcupados(
+          data.map((h) => {
+            // h.data_hora: 'YYYY-MM-DD HH:mm:ss'
+            const [datePart, timePart] = h.data_hora.split(' ');
+            const [year, month, day] = datePart.split('-');
+            const [hour, minute] = timePart.split(':');
+            return new Date(Number(year), Number(month)-1, Number(day), Number(hour), Number(minute));
+          })
+        );
+      } else {
+        setHorariosOcupados([]);
+      }
+    } catch {
+      setHorariosOcupados([]);
+    }
+  }, [massoterapeutaSelecionado, authToken]);
+
+  // Atualiza horários ocupados ao trocar massoterapeuta ou data
+  useEffect(() => {
+    fetchHorariosOcupados();
+  }, [massoterapeutaSelecionado, fetchHorariosOcupados]);
 
   // -------------------------------
   // Buscar histórico de agendamentos do cliente
@@ -196,47 +254,74 @@ function AgendamentosCliente({ usuario, token }) {
       </label>
 
       <label>
-        Data e Hora:
+        Data:
         <DatePicker
           selected={dataHora}
           onChange={(date) => {
-            if (!date) return setDataHora(null);
-            // Só permite horários entre 8:30 e 18:30
-            const hora = date.getHours();
-            const minuto = date.getMinutes();
-            const valido = (hora > 8 || (hora === 8 && minuto >= 30)) && (hora < 18 || (hora === 18 && minuto <= 30));
-            if (!valido) {
-              alert("Escolha um horário entre 8:30 e 18:30.");
-              return;
-            }
             setDataHora(date);
           }}
-          showTimeSelect
-          timeFormat="HH:mm"
-          timeIntervals={30}
-          dateFormat="dd/MM/yyyy HH:mm"
-          placeholderText="Selecione data e hora"
+          dateFormat="dd/MM/yyyy"
+          placeholderText="Selecione a data"
           minDate={new Date()}
           locale="pt-BR"
-          timeCaption="Horário"
-          includeTimes={gerarHorariosPermitidos()}
-          filterDate={(date) => {
-            // Permite apenas segunda, terça, quarta e quinta-feira
-            const day = date.getDay();
-            return day >= 1 && day <= 4;
-          }}
-          dayClassName={(date) => {
-            const day = date.getDay();
-            if (day === 1) return "dia-semana segunda";
-            if (day === 2) return "dia-semana terca";
-            if (day === 3) return "dia-semana quarta";
-            if (day === 4) return "dia-semana quinta";
-            return "dia-semana bloqueado";
-          }}
+            filterDate={(date) => {
+              const today = new Date();
+              today.setHours(0,0,0,0);
+              const d = new Date(date);
+              d.setHours(0,0,0,0);
+              const day = d.getDay();
+              // Só permite datas futuras (>= hoje) e dias úteis (seg a qui)
+              return d >= today && day >= 1 && day <= 4;
+            }}
+            dayClassName={(date) => {
+              const today = new Date();
+              today.setHours(0,0,0,0);
+              const d = new Date(date);
+              d.setHours(0,0,0,0);
+              const day = d.getDay();
+              if (d < today) return "dia-semana bloqueado";
+              if (day === 1) return "dia-semana segunda";
+              if (day === 2) return "dia-semana terca";
+              if (day === 3) return "dia-semana quarta";
+              if (day === 4) return "dia-semana quinta";
+              return "dia-semana bloqueado";
+            }}
         />
       </label>
-
-      <button onClick={criarAgendamento}>Agendar</button>
+      {dataHora && (
+        <div style={{ margin: '16px 0' }}>
+          <div style={{ marginBottom: 8, fontWeight: 'bold' }}>Horários disponíveis:</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {gerarHorariosDiaSelecionado().map(({ horario, ocupado }) => (
+              <button
+                key={horario.toISOString()}
+                type="button"
+                disabled={ocupado}
+                style={{
+                  background: ocupado ? '#ccc' : (dataHora && horario.getHours() === dataHora.getHours() && horario.getMinutes() === dataHora.getMinutes() ? '#1976d2' : '#e0f0ff'),
+                  color: ocupado ? '#888' : '#1976d2',
+                  border: ocupado ? '1px solid #bbb' : '1px solid #1976d2',
+                  borderRadius: 6,
+                  padding: '6px 14px',
+                  cursor: ocupado ? 'not-allowed' : 'pointer',
+                  fontWeight: ocupado ? 'normal' : 'bold',
+                  opacity: ocupado ? 0.6 : 1,
+                }}
+                onClick={() => {
+                  if (!ocupado) {
+                    const novaData = new Date(dataHora);
+                    novaData.setHours(horario.getHours(), horario.getMinutes(), 0, 0);
+                    setDataHora(novaData);
+                  }
+                }}
+              >
+                {horario.getHours().toString().padStart(2, '0')}:{horario.getMinutes().toString().padStart(2, '0')}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <button onClick={criarAgendamento} disabled={!dataHora || dataHora.getHours() === 0 && dataHora.getMinutes() === 0}>Agendar</button>
 
   <h3>Histórico de Agendamentos</h3>
   <button onClick={limparHistorico} style={{marginBottom: '10px'}}>Limpar Histórico</button>
@@ -255,6 +340,7 @@ function AgendamentosCliente({ usuario, token }) {
   );
 }
 export default AgendamentosCliente;
+
 
 // Função para formatar data/hora para o padrão brasileiro
 function formatarDataHora(dataHoraStr) {
@@ -284,7 +370,6 @@ function traduzirStatus(status) {
     default: return status ? status.charAt(0).toUpperCase() + status.slice(1) : "";
   }
 }
-
 function gerarHorariosPermitidos() {
   const horarios = [];
   const agora = new Date();

@@ -1,11 +1,25 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from .massoterapeuta import listar_agendamentos, listar_massoterapeutas, listar_clientes, listar_agendamentos_massoterapeuta
+from .massoterapeuta import listar_agendamentos, listar_massoterapeutas, listar_clientes, listar_agendamentos_massoterapeuta, verificar_login
+from flask_jwt_extended import create_access_token
+# -------------------------------
+# Login do massoterapeuta
+# -------------------------------
+rota_massoterapeuta = Blueprint('rota_massoterapeuta', __name__)
+
+@rota_massoterapeuta.route('/api/massoterapeuta/login', methods=['POST'])
+def login_massoterapeuta():
+    data = request.get_json()
+    usuario = verificar_login(data['email'], data['senha'])
+    if usuario:
+        token = create_access_token(identity=str(usuario['id']))
+        return jsonify({"mensagem": "Login realizado com sucesso", "usuario": usuario, "token": token})
+    else:
+        return jsonify({"erro": "Email, senha inválidos ou e-mail não confirmado"}), 401
 
 # -------------------------------
 # Blueprint de rotas para massoterapeuta
 # -------------------------------
-rota_massoterapeuta = Blueprint('rota_massoterapeuta', __name__)
 
 # -------------------------------
 # Listar todos os massoterapeutas (opcional para dropdown de seleção de clientes)
