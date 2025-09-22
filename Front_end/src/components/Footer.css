@@ -1,0 +1,13 @@
+.footer {
+  width: 100vw;
+  text-align: center;
+  padding: 16px 0 8px 0;
+  background: #107594; /* mesma cor do header */
+  /*background: #0d47a1;  mesma cor do header */
+  color: #fff;
+  font-size: 1rem;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+}

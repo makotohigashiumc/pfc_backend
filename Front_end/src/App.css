@@ -1,0 +1,335 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(to bottom right, #e0f7fa, #f5f5f5);
+  color: #333;
+}
+
+/* ===== MENU FIXO ===== */
+header {
+  background-color: #107594;
+  padding: 12px 25px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+header h1 {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+header h1:hover {
+  transform: scale(1.05);
+}
+
+nav {
+  display: flex;
+  gap: 15px;
+}
+
+nav a {
+  background-color: #0a5b64;
+  color: white;
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 25px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+nav a:hover {
+  background-color: #0c3c4a;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* Diferenciação de usuário logado */
+nav a.cliente {
+  background-color: #0288d1;
+}
+
+nav a.cliente:hover {
+  background-color: #0277bd;
+}
+
+nav a.massoterapeuta {
+  background-color: #4caf50;
+}
+
+nav a.massoterapeuta:hover {
+  background-color: #388e3c;
+}
+
+/* ===== CONTEÚDO CENTRAL ===== */
+main {
+  padding: 30px 20px;
+  max-width: 900px;
+  margin: 40px auto 60px auto;
+}
+
+/* ===== FORMULÁRIOS ===== */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  gap: 25px;
+  margin-top: 0;
+}
+
+form {
+  background: white;
+  padding: 32px 36px;
+  border-radius: 16px;
+  min-width: 320px;
+  max-width: 500px;
+  box-shadow: 0px 4px 16px rgba(0,0,0,0.15);
+  transition: all 0.3s ease;
+}
+
+form:hover {
+  transform: translateY(-3px);
+  box-shadow: 0px 6px 16px rgba(0,0,0,0.2);
+}
+
+form h2 {
+  margin-top: 0;
+  text-align: center;
+  font-size: 22px;
+  color: #107594;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px 12px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: all 0.2s ease;
+}
+
+input:focus, select:focus {
+  border-color: #107594;
+  box-shadow: 0 0 5px rgba(16, 117, 148, 0.3);
+  outline: none;
+}
+
+button {
+  background-color: #107594;
+  color: white;
+  padding: 8px 16px;
+  width: auto;
+  min-width: 80px;
+  max-width: 180px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  margin: 0 4px;
+  display: inline-block;
+}
+
+button:hover {
+  background-color: #0c5164;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+button.enviar-recuperacao {
+  min-width: unset;
+  max-width: unset;
+  width: auto;
+  padding: 6px 12px;
+  font-size: 15px;
+  margin: 0 4px;
+  display: inline-block;
+}
+
+/* ===== LINK ESQUECEU A SENHA ===== */
+.forgot-password {
+  display: block;
+  margin: 8px 0 18px 0;
+  color: #107594;
+  text-align: left;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+.forgot-password:hover {
+  color: #0288d1;
+  text-decoration: underline;
+  background: none;
+}
+
+/* ===== LISTAGEM DE HISTÓRICO ===== */
+ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+}
+
+ul li {
+  background: #ffffffdd;
+  margin-bottom: 10px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
+ul li:hover {
+  background: #e0f7fa;
+  transform: translateX(3px);
+}
+
+/* ===== CALENDÁRIO INTUITIVO ===== */
+.react-datepicker-wrapper,
+.react-datepicker__input-container {
+  width: 100%;
+}
+
+.react-datepicker {
+  font-family: inherit;
+  border-radius: 12px;
+  border: 1px solid #107594;
+  box-shadow: 0 4px 16px rgba(16,117,148,0.08);
+  background: #f7fcfc;
+  color: #107594;
+  padding: 8px;
+}
+
+.react-datepicker__header {
+  background-color: #107594;
+  color: white;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #0288d1 !important;
+  color: white !important;
+}
+
+.react-datepicker__day--disabled {
+  color: #ccc !important;
+  background: #f5f5f5 !important;
+  cursor: not-allowed !important;
+}
+
+.react-datepicker__time-list-item--selected {
+  background: #0288d1 !important;
+  color: white !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  color: white;
+}
+
+.react-datepicker__day-name {
+  color: #107594;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.react-datepicker__day-name:nth-child(1)::after { content: "seg"; }
+.react-datepicker__day-name:nth-child(2)::after { content: "ter"; }
+.react-datepicker__day-name:nth-child(3)::after { content: "qua"; }
+.react-datepicker__day-name:nth-child(4)::after { content: "qui"; }
+.react-datepicker__day-name:nth-child(5)::after { content: "sex"; }
+.react-datepicker__day-name:nth-child(6)::after { content: "sab"; }
+.react-datepicker__day-name:nth-child(7)::after { content: "dom"; }
+
+.react-datepicker__day-name {
+  text-transform: lowercase;
+  letter-spacing: 1px;
+}
+
+.react-datepicker__day-name span {
+  display: none;
+}
+
+label {
+  font-weight: bold;
+  color: #107594;
+  margin-top: 18px;
+  display: block;
+  font-size: 15px;
+  max-width: 100%;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+
+
+.agendamentos-container {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(16,117,148,0.10);
+  padding: 32px 24px;
+  margin-bottom: 32px;
+}
+
+.agendamentos-container h2 {
+  color: #107594;
+  margin-bottom: 18px;
+  font-size: 26px;
+  text-align: center;
+}
+
+.agendamentos-container button {
+  margin-top: 18px;
+  width: auto;
+  min-width: 80px;
+  max-width: 180px;
+  display: inline-block;
+}
+
+/* ===== RESPONSIVIDADE ===== */
+@media (max-width: 600px) {
+  header h1 {
+    font-size: 20px;
+  }
+
+  form {
+    flex: 1 1 100%;
+  }
+
+  nav {
+    flex-wrap: wrap;
+  }
+}
+
+.dia-semana.segunda, .dia-semana.terca, .dia-semana.quarta, .dia-semana.quinta {
+  background: #e0f7fa !important;
+  color: #107594 !important;
+  font-weight: bold;
+}
+.dia-semana.bloqueado {
+  background: #f5f5f5 !important;
+  color: #ccc !important;
+}
