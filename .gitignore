@@ -1,9 +1,0 @@
-# Arquivos e pastas sensíveis a serem ignorados pelo Git
-Back_end/.env
-Back_end/__pycache__/
-Back_end/*.pyc
-*.pyc
-.env
-# Outras possíveis pastas temporárias
-node_modules/
-.DS_Store
