@@ -73,24 +73,18 @@ def verificar_login(email, senha):
                 cursor.close()
             conn.close()
 
-def atualizar_conta(id, nome, telefone, email):
+def atualizar_conta(id, nome, telefone):
     """
-    Atualiza nome, telefone e email do massoterapeuta.
-    Evita duplicidade de emails.
+    Atualiza nome e telefone do massoterapeuta.
+    Email não pode ser alterado.
     """
     conn = get_connection()
     if conn:
         cursor = None
         try:
             cursor = conn.cursor()
-            # Verifica duplicidade de email
-            cursor.execute("SELECT id FROM massoterapeuta WHERE email = %s AND id != %s", (email, id))
-            if cursor.fetchone():
-                print(f"Erro: email '{email}' já cadastrado por outro massoterapeuta")
-                return
-
-            sql = "UPDATE massoterapeuta SET nome = %s, telefone = %s, email = %s WHERE id = %s"
-            cursor.execute(sql, (nome, telefone, email, id))
+            sql = "UPDATE massoterapeuta SET nome = %s, telefone = %s WHERE id = %s"
+            cursor.execute(sql, (nome, telefone, id))
             conn.commit()
             print(f"Massoterapeuta {id} atualizado com sucesso!")
         except DatabaseError as e:

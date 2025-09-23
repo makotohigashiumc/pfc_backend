@@ -1,0 +1,18 @@
+# Arquivos e pastas sensíveis a serem ignorados pelo Git
+Back_end/.env
+Back_end/.env.example
+Back_end/app.py
+Back_end/banco_atualizado.sql
+Back_end/cadastrar_massoterapeuta_offline.py
+Back_end/email_api.py
+Back_end/__pycache__/
+Back_end/*.pyc
+*.pyc
+.env
+
+# Ignorar frontend completamente
+Front_end/
+
+# Outras possíveis pastas temporárias
+node_modules/
+.DS_Store

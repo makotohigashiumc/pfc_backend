@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from .massoterapeuta import listar_agendamentos, listar_massoterapeutas, listar_clientes, listar_agendamentos_massoterapeuta, verificar_login
+from .massoterapeuta import listar_agendamentos, listar_massoterapeutas, listar_clientes, listar_agendamentos_massoterapeuta, verificar_login, atualizar_conta
 from flask_jwt_extended import create_access_token
 # -------------------------------
 # Login do massoterapeuta
@@ -86,3 +86,29 @@ def get_agendamentos():
         return jsonify(lista)
     except Exception as e:
         return jsonify({"erro": f"Erro ao buscar agendamentos: {str(e)}"}), 500
+
+# -------------------------------
+# Atualizar perfil do massoterapeuta logado
+# -------------------------------
+@rota_massoterapeuta.route('/api/massoterapeuta/me', methods=['PUT'])
+@jwt_required()
+def atualizar_perfil():
+    """
+    Atualiza nome e telefone do massoterapeuta logado.
+    Email não pode ser alterado.
+    """
+    massoterapeuta_id = get_jwt_identity()
+    data = request.get_json()
+    
+    try:
+        nome = data.get('nome')
+        telefone = data.get('telefone')
+        
+        if not nome or not telefone:
+            return jsonify({"erro": "Nome e telefone são obrigatórios"}), 400
+            
+        atualizar_conta(int(massoterapeuta_id), nome, telefone)
+        return jsonify({"mensagem": "Perfil atualizado com sucesso"})
+        
+    except Exception as e:
+        return jsonify({"erro": f"Erro ao atualizar perfil: {str(e)}"}), 500
