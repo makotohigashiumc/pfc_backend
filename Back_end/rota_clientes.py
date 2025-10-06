@@ -1,45 +1,59 @@
+# ===== IMPORTS DAS ROTAS DE CLIENTES =====
+# Flask: Framework web e funções de requisição/resposta
 from flask import Blueprint, request, jsonify
+# JWT: Sistema de autenticação - criar e verificar tokens
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
+# datetime: Manipulação de datas
 from datetime import datetime
+# Funções do módulo cliente: Lógica de negócio
 from .cliente import (
-    cadastrar_cliente,
-    verificar_login,
-    cadastrar_agendamento,
-    atualizar_conta,
-    excluir_cliente,
-    historico_sessoes_cliente,
-    buscar_cliente_por_id
+    cadastrar_cliente,        # Registrar novo cliente
+    verificar_login,          # Validar email/senha
+    cadastrar_agendamento,    # Criar agendamento (com sintomas)
+    atualizar_conta,          # Editar dados do cliente
+    excluir_cliente,          # Deletar conta
+    historico_sessoes_cliente, # Listar agendamentos
+    buscar_cliente_por_id     # Buscar cliente específico
 )
-from Back_end.database import get_connection
-
-rota_clientes = Blueprint('rota_clientes', __name__)
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
-from datetime import datetime
-from .cliente import (
-    cadastrar_cliente,
-    verificar_login,
-    cadastrar_agendamento,
-    atualizar_conta,
-    excluir_cliente,
-    historico_sessoes_cliente,
-    buscar_cliente_por_id
-)
-from Back_end.database import get_connection
-
-rota_clientes = Blueprint('rota_clientes', __name__)
-
-from Back_end.email_api import send_email, generate_confirmation_token, verify_confirmation_token
+# Database e email: Conexão e notificações
+from .database import get_connection
+from .email_api import send_email, generate_confirmation_token, verify_confirmation_token
 import os
 from werkzeug.security import generate_password_hash
-# -------------------------------
-# ROTA: Confirmação de e-mail do cliente
+
+# ===== CRIAÇÃO DO BLUEPRINT =====
+# Blueprint: Organiza as rotas em grupos (todas as rotas de cliente ficam aqui)
+rota_clientes = Blueprint('rota_clientes', __name__)
+
+# ================================================================
+# ENDPOINT: CONFIRMAÇÃO DE EMAIL
+# URL: POST /api/clientes/confirmar-email/<token>
+# ================================================================
 @rota_clientes.route('/api/clientes/confirmar-email/<token>', methods=['POST'])
 def confirmar_email(token):
-    from Back_end.email_api import verify_confirmation_token
+    """
+    PROPÓSITO: Ativa a conta do cliente após verificar email
+    
+    FLUXO:
+    1. Cliente recebe email com link/token
+    2. Cliente clica no link
+    3. Sistema valida token
+    4. Marca email como confirmado
+    5. Cliente pode fazer login
+    
+    PARÂMETROS:
+    - token: Código único enviado por email
+    
+    RETORNA:
+    - Sucesso: {"mensagem": "Email confirmado"}
+    - Erro: {"erro": "Token inválido"}
+    """
+    from .email_api import verify_confirmation_token
     from . import database
     import traceback
     try:
+        # ===== VALIDAÇÃO DO TOKEN =====
+        # Verifica se token é válido e não expirou
         email = verify_confirmation_token(token)
         if not email:
             print(f"[CONFIRMAÇÃO] Token inválido ou expirado: {token}")
@@ -97,54 +111,147 @@ def redefinir_senha():
     cur.close()
     conn.close()
     return jsonify({"mensagem": "Senha redefinida com sucesso."})
-# ROTA: Cadastrar cliente
-# -------------------------------
+# ================================================================
+# ENDPOINT: CADASTRO DE CLIENTE
+# URL: POST /api/clientes
+# ================================================================
 @rota_clientes.route('/api/clientes', methods=['POST'])
 def api_cadastrar_cliente():
+    """
+    PROPÓSITO: Registra um novo cliente no sistema
+    
+    DADOS OBRIGATÓRIOS (JSON):
+    - nome: Nome completo
+    - telefone: Número de contato
+    - sexo: "Masculino" ou "Feminino"
+    - data_nascimento: "YYYY-MM-DD"
+    - email: Email único
+    - senha: Senha (será criptografada)
+    
+    FLUXO:
+    1. Valida campos obrigatórios
+    2. Chama função cadastrar_cliente()
+    3. Envia email de confirmação
+    4. Retorna sucesso/erro
+    """
+    # ===== OBTENÇÃO DOS DADOS =====
     data = request.get_json()
+    
+    # ===== VALIDAÇÃO DOS CAMPOS OBRIGATÓRIOS =====
     if not data or not all(k in data for k in ("nome", "telefone", "sexo", "data_nascimento", "email", "senha")):
         return jsonify({"erro": "Campos obrigatórios faltando"}), 400
+    
+    # ===== CHAMADA DA FUNÇÃO DE CADASTRO =====
     resultado = cadastrar_cliente(
         data['nome'], data['telefone'], data['sexo'],
         data['data_nascimento'], data['email'], data['senha']
     )
+    
+    # ===== TRATAMENTO DE ERROS =====
     if isinstance(resultado, dict) and "erro" in resultado:
         return jsonify({"erro": resultado["erro"]}), 400
     if not resultado:
         return jsonify({"erro": "Falha ao cadastrar cliente"}), 400
+    
+    # ===== RETORNO DE SUCESSO =====
     return jsonify({"mensagem": "Cadastro realizado! Confirme seu e-mail para acessar o sistema.", "id": resultado}), 201
 
-# -------------------------------
-# ROTA: Login do cliente
-# -------------------------------
+# ================================================================
+# ENDPOINT: LOGIN DO CLIENTE
+# URL: POST /api/clientes/login
+# ================================================================
 @rota_clientes.route('/api/clientes/login', methods=['POST'])
 def api_login():
+    """
+    PROPÓSITO: Autentica cliente e gera token JWT
+    
+    DADOS OBRIGATÓRIOS (JSON):
+    - email: Email do cliente
+    - senha: Senha do cliente
+    
+    RETORNA:
+    - Sucesso: Token JWT + dados do usuário
+    - Erro: Mensagem de erro 401
+    """
+    # ===== OBTENÇÃO DOS DADOS =====
     data = request.get_json()
+    
+    # ===== VALIDAÇÃO DOS CAMPOS =====
     if not data or not all(k in data for k in ("email", "senha")):
         return jsonify({"erro": "Campos obrigatórios faltando"}), 400
+    
+    # ===== VERIFICAÇÃO DE LOGIN =====
     usuario = verificar_login(data['email'], data['senha'])
     if usuario:
+        # ===== GERAÇÃO DE TOKEN JWT =====
+        # Token é usado para autenticar requisições futuras
         token = create_access_token(identity=str(usuario['id']))
         return jsonify({
             "mensagem": "Login realizado com sucesso",
             "usuario": usuario,
             "token": token
         })
+    
+    # ===== ERRO DE AUTENTICAÇÃO =====
     return jsonify({"erro": "Email, senha inválidos ou e-mail não confirmado."}), 401
 
-# -------------------------------
-# ROTA: Criar agendamento
-# -------------------------------
+# ================================================================
+# ENDPOINT: CRIAR AGENDAMENTO (COM SINTOMAS) - FUNCIONALIDADE PRINCIPAL
+# URL: POST /api/clientes/agendamentos
+# ================================================================
 @rota_clientes.route('/api/clientes/agendamentos', methods=['POST'])
-@jwt_required()
+@jwt_required()  # 🔒 PROTEÇÃO: Só clientes logados podem agendar
 def api_cadastrar_agendamento():
+    """
+    PROPÓSITO: Cria novo agendamento com descrição de sintomas
+    
+    ⭐ ESTA É A FUNCIONALIDADE PRINCIPAL QUE IMPLEMENTAMOS ⭐
+    
+    DADOS OBRIGATÓRIOS (JSON):
+    - massoterapeuta_id: ID do profissional escolhido
+    - data_hora: "YYYY-MM-DDTHH:MM" (formato ISO)
+    
+    DADOS OPCIONAIS (JSON):
+    - sintomas: Descrição dos sintomas do cliente (NOVO CAMPO)
+    
+    AUTENTICAÇÃO:
+    - Requer token JWT no header Authorization
+    - Sistema identifica automaticamente o cliente logado
+    
+    VALIDAÇÕES AUTOMÁTICAS:
+    - Horário de funcionamento (8:30-18:30)
+    - Dias úteis (segunda a quinta)
+    - Conflitos de horário
+    - Agendamentos passados
+    
+    RETORNA:
+    - Sucesso: Dados do agendamento criado
+    - Erro: Mensagem específica do problema
+    """
+    # ===== IDENTIFICAÇÃO DO CLIENTE =====
+    # get_jwt_identity() extrai o ID do cliente do token JWT
     user_id = get_jwt_identity()
+    
+    # ===== OBTENÇÃO DOS DADOS =====
     data = request.get_json()
+    
+    # ===== VALIDAÇÃO DOS CAMPOS OBRIGATÓRIOS =====
     if not data or not all(k in data for k in ("massoterapeuta_id", "data_hora")):
         return jsonify({"erro": "Campos obrigatórios faltando"}), 400
-    agendamento = cadastrar_agendamento(user_id, data['massoterapeuta_id'], data['data_hora'])
+    
+    # ===== EXTRAÇÃO DOS SINTOMAS (NOVA FUNCIONALIDADE) =====
+    # Campo opcional - se não informado, fica como None
+    sintomas = data.get('sintomas', None)
+    
+    # ===== CRIAÇÃO DO AGENDAMENTO =====
+    # Passa TODOS os parâmetros incluindo sintomas
+    agendamento = cadastrar_agendamento(user_id, data['massoterapeuta_id'], data['data_hora'], sintomas)
+    
+    # ===== TRATAMENTO DE ERRO =====
     if not agendamento:
         return jsonify({"erro": "Falha ao criar agendamento"}), 400
+    
+    # ===== RETORNO DE SUCESSO =====
     return jsonify({"mensagem": "Agendamento cadastrado com sucesso", "agendamento": agendamento}), 201
 
 # -------------------------------
@@ -215,9 +322,10 @@ def horarios_ocupados_massoterapeuta(massoterapeuta_id):
         cursor = None
         try:
             cursor = conn.cursor()
+            # Busca todos os horários ocupados do massoterapeuta, independente do cliente
             cursor.execute("""
                 SELECT data_hora FROM agendamento
-                WHERE massoterapeuta_id = %s AND status = 'marcado'
+                WHERE massoterapeuta_id = %s AND status IN ('marcado', 'confirmado', 'pendente')
             """, (massoterapeuta_id,))
             rows = cursor.fetchall()
             horarios = [{"data_hora": row[0].strftime("%Y-%m-%d %H:%M:%S")} for row in rows]
@@ -241,8 +349,8 @@ def cancelar_agendamento_cliente(agendamento_id):
         if not conn:
             return jsonify({"erro": "Erro de conexão com o banco"}), 500
         cursor = conn.cursor()
-        # Verifica se o agendamento pertence ao cliente logado e está marcado
-        cursor.execute("SELECT id FROM agendamento WHERE id = %s AND cliente_id = %s AND status = 'marcado'", (agendamento_id, user_id))
+        # Verifica se o agendamento pertence ao cliente logado e pode ser cancelado
+        cursor.execute("SELECT id FROM agendamento WHERE id = %s AND cliente_id = %s AND status IN ('marcado', 'pendente')", (agendamento_id, user_id))
         if not cursor.fetchone():
             cursor.close()
             conn.close()
