@@ -107,11 +107,6 @@ def get_agendamentos_confirmados():
     Retorna agendamentos com status 'confirmado' e 'concluido' do massoterapeuta logado.
     Histórico de sessões já realizadas ou confirmadas.
     """
-def get_agendamentos_confirmados():
-    """
-    Retorna agendamentos com status 'confirmado' e 'concluido' do massoterapeuta logado.
-    Histórico de sessões já realizadas ou confirmadas.
-    """
     massoterapeuta_id = get_jwt_identity()  # Pega ID do massoterapeuta logado
     try:  # Tenta executar
         agendamentos = listar_agendamentos_por_status(massoterapeuta_id, ['confirmado', 'concluido'])  # Busca histórico de agendamentos
