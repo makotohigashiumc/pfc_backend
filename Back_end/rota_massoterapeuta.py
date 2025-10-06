@@ -2,6 +2,7 @@
 from flask import Blueprint, jsonify, request  # Flask: framework web, Blueprint: organiza rotas, jsonify: converte para JSON, request: dados da requisição
 from flask_jwt_extended import jwt_required, get_jwt_identity  # JWT: jwt_required = proteção de rota, get_jwt_identity = pega ID do usuário logado
 from .massoterapeuta import listar_agendamentos, listar_massoterapeutas, listar_clientes, listar_agendamentos_massoterapeuta, verificar_login, atualizar_conta, atualizar_agendamento, listar_agendamentos_por_status, buscar_paciente_com_historico, cancelar_agendamento_com_motivo  # Importa funções de lógica de negócio
+from .cliente import excluir_cliente  # Importa função para excluir cliente
 from flask_jwt_extended import create_access_token  # Criar tokens de autenticação
 # -------------------------------
 # Login do massoterapeuta
@@ -277,3 +278,28 @@ def cancelar_agendamento_com_notificacao(agendamento_id):
             
     except Exception as e:
         return jsonify({"erro": f"Erro ao cancelar agendamento: {str(e)}"}), 500
+
+# -------------------------------
+# Excluir cliente (apenas para massoterapeutas)
+# -------------------------------
+# ENDPOINT: Excluir cliente - DELETE /api/massoterapeuta/clientes/{cliente_id} (PROTEGIDO)
+@rota_massoterapeuta.route('/api/massoterapeuta/clientes/<int:cliente_id>', methods=['DELETE'])
+@jwt_required()  # 🔒 PROTEÇÃO: Só massoterapeutas logados
+def excluir_cliente_por_massoterapeuta(cliente_id):
+    """
+    Permite ao massoterapeuta excluir um cliente do sistema.
+    Apenas massoterapeutas podem realizar esta ação.
+    """
+    massoterapeuta_id = get_jwt_identity()  # Verifica se o usuário é massoterapeuta
+    
+    try:
+        # Chama a função para excluir o cliente
+        resultado = excluir_cliente(cliente_id)
+        
+        if resultado:
+            return jsonify({"mensagem": "Cliente excluído com sucesso"}), 200
+        else:
+            return jsonify({"erro": "Cliente não encontrado ou erro ao excluir"}), 404
+            
+    except Exception as e:
+        return jsonify({"erro": f"Erro ao excluir cliente: {str(e)}"}), 500
