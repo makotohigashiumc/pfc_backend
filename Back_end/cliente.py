@@ -252,22 +252,56 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
             conn.commit()
             print(f"Agendamento inserido com sucesso: {agendamento}")
             
-            # ===== NOTIFICAÇÃO POR EMAIL =====
+            # ===== NOTIFICAÇÕES (EMAIL + WHATSAPP) =====
             try:
-                from Back_end.email_api import sendgrid_email_api_massoterapia
-                
                 # ===== BUSCAR DADOS DO CLIENTE =====
-                cursor.execute("SELECT email, nome FROM cliente WHERE id = %s", (cliente_id,))
+                cursor.execute("SELECT email, nome, telefone FROM cliente WHERE id = %s", (cliente_id,))
                 cliente = cursor.fetchone()
+                
                 if cliente:
-                    destinatario = cliente[0]
-                    nome_cliente = cliente[1]
-                    assunto = "Solicitação de Agendamento Recebida"
-                    conteudo = f"Olá {nome_cliente}, sua solicitação de agendamento para {data_hora} foi recebida e está aguardando confirmação da clínica. Você será notificado quando o agendamento for confirmado."
-                    status, resp = sendgrid_email_api_massoterapia(destinatario, assunto, conteudo)
-                    print(f"Status envio e-mail agendamento: {status}, resposta: {resp}")
+                    destinatario = cliente[0]  # email
+                    nome_cliente = cliente[1]  # nome
+                    telefone_cliente = cliente[2]  # telefone
+                    
+                    # ===== NOTIFICAÇÃO POR EMAIL =====
+                    try:
+                        from email_api import sendgrid_email_api_massoterapia
+                        assunto = "Solicitação de Agendamento Recebida"
+                        conteudo = f"Olá {nome_cliente}, sua solicitação de agendamento para {data_hora} foi recebida e está aguardando confirmação da clínica. Você será notificado quando o agendamento for confirmado."
+                        status, resp = sendgrid_email_api_massoterapia(destinatario, assunto, conteudo)
+                        print(f"Status envio e-mail agendamento: {status}, resposta: {resp}")
+                    except Exception as e:
+                        print(f"Erro ao enviar e-mail de agendamento: {e}")
+                    
+                    # ===== NOTIFICAÇÃO POR WHATSAPP =====
+                    try:
+                        from whatsapp_api import get_whatsapp_api
+                        
+                        if telefone_cliente:
+                            # Formatar data para mensagem
+                            data_formatada = data_hora.strftime("%d/%m/%Y às %H:%M")
+                            
+                            # Enviar confirmação de recebimento
+                            whatsapp = get_whatsapp_api()
+                            resultado = whatsapp.send_appointment_confirmation(
+                                phone=telefone_cliente,
+                                cliente_nome=nome_cliente,
+                                data_hora=data_formatada,
+                                massoterapeuta="Equipe HM Massoterapia"
+                            )
+                            
+                            if resultado['success']:
+                                print(f"✅ WhatsApp enviado com sucesso: {resultado.get('message_id')}")
+                            else:
+                                print(f"❌ Erro ao enviar WhatsApp: {resultado.get('error')}")
+                        else:
+                            print("⚠️ Cliente sem telefone cadastrado - WhatsApp não enviado")
+                            
+                    except Exception as e:
+                        print(f"Erro ao enviar WhatsApp de agendamento: {e}")
+                        
             except Exception as e:
-                print(f"Erro ao enviar e-mail de agendamento: {e}")
+                print(f"Erro ao enviar notificações de agendamento: {e}")
             return agendamento
         except Exception as e:
             conn.rollback()

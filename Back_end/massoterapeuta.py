@@ -235,6 +235,26 @@ def atualizar_agendamento(agendamento_id, massoterapeuta_id, novo_status):
             print(f"Agendamento {agendamento_id} não encontrado ou não pertence ao massoterapeuta {massoterapeuta_id}")
             return False  # Retorna falso
         
+        # Busca dados do agendamento e cliente ANTES de atualizar
+        cursor.execute("""
+            SELECT a.data_hora, c.nome, c.telefone, c.email, m.nome as massoterapeuta_nome
+            FROM agendamento a 
+            JOIN cliente c ON a.cliente_id = c.id
+            JOIN massoterapeuta m ON a.massoterapeuta_id = m.id
+            WHERE a.id = %s AND a.massoterapeuta_id = %s
+        """, (agendamento_id, massoterapeuta_id))
+        
+        dados_agendamento = cursor.fetchone()
+        if not dados_agendamento:
+            print(f"Erro: dados do agendamento não encontrados")
+            return False
+            
+        data_hora = dados_agendamento[0]
+        nome_cliente = dados_agendamento[1]
+        telefone_cliente = dados_agendamento[2]
+        email_cliente = dados_agendamento[3]
+        massoterapeuta_nome = dados_agendamento[4]
+        
         # Atualiza o status
         cursor.execute("""
             UPDATE agendamento 
@@ -244,6 +264,63 @@ def atualizar_agendamento(agendamento_id, massoterapeuta_id, novo_status):
         
         conn.commit()  # Confirma alteração
         print(f"Agendamento {agendamento_id} atualizado para status '{novo_status}'")
+        
+        # ===== NOTIFICAÇÕES POR WHATSAPP =====
+        try:
+            from whatsapp_api import get_whatsapp_api
+            
+            if telefone_cliente and novo_status in ['confirmado', 'marcado', 'cancelado']:
+                # Formatar data para mensagem
+                if isinstance(data_hora, str):
+                    # Se for string, tentar converter
+                    from datetime import datetime
+                    try:
+                        data_hora = datetime.strptime(data_hora, "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        pass
+                
+                data_formatada = data_hora.strftime("%d/%m/%Y às %H:%M") if hasattr(data_hora, 'strftime') else str(data_hora)
+                
+                whatsapp = get_whatsapp_api()
+                
+                if novo_status in ['confirmado', 'marcado']:
+                    # Agendamento confirmado
+                    resultado = whatsapp.send_appointment_approved(
+                        phone=telefone_cliente,
+                        cliente_nome=nome_cliente,
+                        data_hora=data_formatada,
+                        massoterapeuta=massoterapeuta_nome,
+                        endereco="Rua das Flores, 123 - Centro"
+                    )
+                    
+                elif novo_status == 'cancelado':
+                    # Agendamento cancelado
+                    mensagem = f"""🚫 *Agendamento Cancelado*
+
+Olá {nome_cliente}!
+
+Infelizmente precisamos cancelar seu agendamento:
+
+📅 Data: {data_formatada}
+👨‍⚕️ Profissional: {massoterapeuta_nome}
+
+Entre em contato para reagendar:
+📞 (11) 97610-1010
+
+Pedimos desculpas pelo inconveniente."""
+
+                    resultado = whatsapp.send_message(telefone_cliente, mensagem)
+                
+                if resultado['success']:
+                    print(f"✅ WhatsApp de atualização enviado: {resultado.get('message_id')}")
+                else:
+                    print(f"❌ Erro ao enviar WhatsApp: {resultado.get('error')}")
+            else:
+                print(f"⚠️ WhatsApp não enviado - telefone: {telefone_cliente}, status: {novo_status}")
+                
+        except Exception as e:
+            print(f"Erro ao enviar WhatsApp de atualização: {e}")
+        
         return True  # Retorna verdadeiro
         
     except Exception as e:  # Se der erro

@@ -349,15 +349,73 @@ def cancelar_agendamento_cliente(agendamento_id):
         if not conn:
             return jsonify({"erro": "Erro de conexão com o banco"}), 500
         cursor = conn.cursor()
-        # Verifica se o agendamento pertence ao cliente logado e pode ser cancelado
-        cursor.execute("SELECT id FROM agendamento WHERE id = %s AND cliente_id = %s AND status IN ('marcado', 'pendente')", (agendamento_id, user_id))
-        if not cursor.fetchone():
+        # Busca dados do agendamento antes de cancelar
+        cursor.execute("""
+            SELECT a.data_hora, c.nome, c.telefone, m.nome as massoterapeuta_nome
+            FROM agendamento a 
+            JOIN cliente c ON a.cliente_id = c.id
+            JOIN massoterapeuta m ON a.massoterapeuta_id = m.id
+            WHERE a.id = %s AND a.cliente_id = %s AND a.status IN ('marcado', 'pendente')
+        """, (agendamento_id, user_id))
+        
+        dados_agendamento = cursor.fetchone()
+        if not dados_agendamento:
             cursor.close()
             conn.close()
             return jsonify({"erro": "Agendamento não encontrado ou não pode ser cancelado"}), 404
+            
+        data_hora = dados_agendamento[0]
+        nome_cliente = dados_agendamento[1]
+        telefone_cliente = dados_agendamento[2]
+        massoterapeuta_nome = dados_agendamento[3]
+        
         # Atualiza status para cancelado
         cursor.execute("UPDATE agendamento SET status = 'cancelado' WHERE id = %s", (agendamento_id,))
         conn.commit()
+        
+        # ===== NOTIFICAÇÃO POR WHATSAPP =====
+        try:
+            from whatsapp_api import get_whatsapp_api
+            
+            if telefone_cliente:
+                # Formatar data para mensagem
+                if isinstance(data_hora, str):
+                    from datetime import datetime
+                    try:
+                        data_hora = datetime.strptime(data_hora, "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        pass
+                
+                data_formatada = data_hora.strftime("%d/%m/%Y às %H:%M") if hasattr(data_hora, 'strftime') else str(data_hora)
+                
+                mensagem = f"""❌ *Cancelamento Confirmado*
+
+Olá {nome_cliente}!
+
+Seu agendamento foi cancelado:
+
+📅 Data: {data_formatada}
+👨‍⚕️ Profissional: {massoterapeuta_nome}
+
+Para reagendar, entre em contato:
+📞 (11) 97610-1010
+💻 Ou pelo nosso sistema online
+
+Obrigado pela compreensão! 💙"""
+
+                whatsapp = get_whatsapp_api()
+                resultado = whatsapp.send_message(telefone_cliente, mensagem)
+                
+                if resultado['success']:
+                    print(f"✅ WhatsApp de cancelamento enviado: {resultado.get('message_id')}")
+                else:
+                    print(f"❌ Erro ao enviar WhatsApp: {resultado.get('error')}")
+            else:
+                print("⚠️ Cliente sem telefone - WhatsApp de cancelamento não enviado")
+                
+        except Exception as e:
+            print(f"Erro ao enviar WhatsApp de cancelamento: {e}")
+        
         cursor.close()
         conn.close()
         return jsonify({"mensagem": "Agendamento cancelado com sucesso"})
