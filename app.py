@@ -6,25 +6,30 @@ import sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
 back_end_dir = os.path.join(current_dir, 'Back_end')
 sys.path.insert(0, back_end_dir)
+sys.path.insert(0, current_dir)
 
-# Muda para o diretório Back_end para resolver imports relativos
+# Muda para o diretório Back_end TEMPORARIAMENTE para resolver imports relativos
+original_cwd = os.getcwd()
 os.chdir(back_end_dir)
 
-# Agora os imports relativos funcionam
-from rota_clientes import rota_clientes
-from rota_massoterapeuta import rota_massoterapeuta  
-from rota_whatsapp import rota_whatsapp
-from rota_contato import rota_contato
+try:
+    # Agora os imports relativos funcionam
+    from rota_clientes import rota_clientes
+    from rota_massoterapeuta import rota_massoterapeuta  
+    from rota_whatsapp import rota_whatsapp
+    from rota_contato import rota_contato
+finally:
+    # SEMPRE volta para o diretório original
+    os.chdir(original_cwd)
 
-# Flask e configurações
+# Flask e configurações (agora fora do try/finally)
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_jwt_extended.exceptions import NoAuthorizationError
 from dotenv import load_dotenv
 
-# Volta para o diretório raiz para carregar .env
-os.chdir(current_dir)
+# Carrega variáveis de ambiente (agora na raiz)
 load_dotenv()
 
 # Cria aplicação Flask
