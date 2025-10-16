@@ -2,12 +2,15 @@
 import os
 import sys
 
-# Adiciona Back_end ao path
+# Adiciona Back_end ao path ANTES de qualquer import
 current_dir = os.path.dirname(os.path.abspath(__file__))
 back_end_dir = os.path.join(current_dir, 'Back_end')
 sys.path.insert(0, back_end_dir)
 
-# Imports das rotas do Back_end (sem imports relativos)
+# Muda para o diretório Back_end para resolver imports relativos
+os.chdir(back_end_dir)
+
+# Agora os imports relativos funcionam
 from rota_clientes import rota_clientes
 from rota_massoterapeuta import rota_massoterapeuta  
 from rota_whatsapp import rota_whatsapp
@@ -20,7 +23,8 @@ from flask_jwt_extended import JWTManager
 from flask_jwt_extended.exceptions import NoAuthorizationError
 from dotenv import load_dotenv
 
-# Carrega variáveis de ambiente
+# Volta para o diretório raiz para carregar .env
+os.chdir(current_dir)
 load_dotenv()
 
 # Cria aplicação Flask
