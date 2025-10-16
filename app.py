@@ -1,7 +1,6 @@
 # ===== ENTRY POINT RAILWAY =====
 import os
 import sys
-import subprocess
 
 # Caminho para o diretório Back_end
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -22,7 +21,10 @@ if __name__ == '__main__':
     
     # Importa e executa o app do Back_end
     import app as backend_app
-    backend_app.app.run(
+    
+    # A variável Flask se chama 'app' dentro do módulo
+    flask_app = backend_app.app
+    flask_app.run(
         host="0.0.0.0",
         port=int(port),
         debug=False
