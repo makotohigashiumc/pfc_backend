@@ -1,1 +1,0 @@
-web: python -m Back_end.app
