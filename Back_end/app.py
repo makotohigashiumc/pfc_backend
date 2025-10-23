@@ -15,18 +15,10 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Rotas: Importa todas as URLs/endpoints da aplicação
-try:
-    # Tenta imports relativos primeiro (para quando executado como módulo)
-    from .rota_clientes import rota_clientes         # APIs para clientes
-    from .rota_massoterapeuta import rota_massoterapeuta  # APIs para massoterapeutas
-    from .rota_whatsapp import rota_whatsapp         # APIs para WhatsApp
-    from .rota_contato import rota_contato           # APIs para formulário de contato
-except ImportError:
-    # Se não funcionar, usa imports absolutos (para quando executado diretamente)
-    from rota_clientes import rota_clientes         # APIs para clientes
-    from rota_massoterapeuta import rota_massoterapeuta  # APIs para massoterapeutas
-    from rota_whatsapp import rota_whatsapp         # APIs para WhatsApp
-    from rota_contato import rota_contato           # APIs para formulário de contato
+from Back_end.rota_clientes import rota_clientes         # APIs para clientes
+from Back_end.rota_massoterapeuta import rota_massoterapeuta  # APIs para massoterapeutas
+from Back_end.rota_whatsapp import rota_whatsapp         # APIs para WhatsApp
+from Back_end.rota_contato import rota_contato           # APIs para formulário de contato
 
 # ===== CARREGAMENTO DE VARIÁVEIS DE AMBIENTE =====
 load_dotenv()  # Carrega todas as variáveis do arquivo .env
