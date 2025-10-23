@@ -1,0 +1,7 @@
+# requirements.txt para o backend
+flask
+flask-cors
+flask-jwt-extended
+dotenv
+psycopg2
+werkzeug
