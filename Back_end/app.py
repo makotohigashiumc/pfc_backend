@@ -1,3 +1,6 @@
+import os
+print("CWD:", os.getcwd())
+print("Back_end contents:", os.listdir(os.path.join(os.getcwd(), "Back_end")))
 # ===== IMPORTS =====
 # Flask: Framework web para Python - cria o servidor HTTP
 from flask import Flask, jsonify
