@@ -8,8 +8,6 @@ Back_end/*.pyc
 *.pyc
 .env
 
-
-
 # Outras possíveis pastas temporárias
 node_modules/
 .DS_Store
