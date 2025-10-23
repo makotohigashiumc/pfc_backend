@@ -28,7 +28,13 @@ load_dotenv()  # Carrega todas as variáveis do arquivo .env
 
 # ===== CRIAÇÃO DA APLICAÇÃO =====
 # Cria a instância principal do servidor Flask
+
 app = Flask(__name__)
+
+# Rota raiz para status do backend
+@app.route("/")
+def index():
+    return "API Massoterapia HM rodando!", 200
 
 # ===== CONFIGURAÇÃO DE SEGURANÇA =====
 # 🔑 Chave secreta para assinar tokens JWT (senha do sistema)
