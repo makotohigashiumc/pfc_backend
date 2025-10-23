@@ -6,11 +6,9 @@ Gerencia webhooks e envio de mensagens
 from flask import Blueprint, request, jsonify
 import logging
 
-# Import condicional para funcionar tanto como módulo quanto executado diretamente
-try:
-    from .whatsapp_api import get_whatsapp_api
-except ImportError:
-    from whatsapp_api import get_whatsapp_api
+
+# Import absoluto para funcionar em produção/deploy
+from Back_end.whatsapp_api import get_whatsapp_api
 
 # Configuração de logging
 logger = logging.getLogger(__name__)

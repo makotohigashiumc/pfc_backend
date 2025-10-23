@@ -1,6 +1,6 @@
 # ===== IMPORTS =====
 # database: Função para conectar ao banco PostgreSQL
-from .database import get_connection
+from Back_end.database import get_connection
 # psycopg2: Drivers e tratamento de erros do PostgreSQL
 from psycopg2 import DatabaseError, errors
 from psycopg2.extras import RealDictCursor  # Retorna dados como dicionário
@@ -265,7 +265,7 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
                     
                     # ===== NOTIFICAÇÃO POR EMAIL =====
                     try:
-                        from email_api import sendgrid_email_api_massoterapia
+                        from Back_end.email_api import sendgrid_email_api_massoterapia
                         assunto = "Solicitação de Agendamento Recebida"
                         conteudo = f"Olá {nome_cliente}, sua solicitação de agendamento para {data_hora} foi recebida e está aguardando confirmação da clínica. Você será notificado quando o agendamento for confirmado."
                         status, resp = sendgrid_email_api_massoterapia(destinatario, assunto, conteudo)
@@ -275,7 +275,7 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
                     
                     # ===== NOTIFICAÇÃO POR WHATSAPP =====
                     try:
-                        from whatsapp_api import get_whatsapp_api
+                        from Back_end.whatsapp_api import get_whatsapp_api
                         
                         if telefone_cliente:
                             # Formatar data para mensagem

@@ -35,20 +35,20 @@ def test_whatsapp_config():
 def test_whatsapp_api():
     """Testa se a API do WhatsApp está respondendo"""
     try:
-        from whatsapp_api import WhatsAppCloudAPI
-        
+        from Back_end.whatsapp_api import WhatsAppCloudAPI
+
         print("\n🔗 Testando conexão com WhatsApp API...")
-        
+
         # Inicializa API
         whatsapp = WhatsAppCloudAPI()
         print("✅ Classe WhatsAppCloudAPI inicializada com sucesso!")
-        
+
         # Teste simples (sem enviar mensagem real)
         print(f"   URL da API: {whatsapp.api_url}")
         print(f"   Headers configurados: ✓")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"❌ Erro ao inicializar WhatsApp API: {e}")
         return False
@@ -56,27 +56,27 @@ def test_whatsapp_api():
 def check_database_connection():
     """Verifica conexão com banco de dados"""
     try:
-        from database import get_connection
-        
+        from Back_end.database import get_connection
+
         print("\n🔗 Testando conexão com banco de dados...")
         conn = get_connection()
-        
+
         if conn:
             print("✅ Conexão com banco estabelecida!")
-            
+
             # Verifica se há agendamentos
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM agendamento")
             count = cursor.fetchone()[0]
             print(f"   📊 Total de agendamentos no banco: {count}")
-            
+
             cursor.close()
             conn.close()
             return True
         else:
             print("❌ Falha na conexão com banco")
             return False
-            
+
     except Exception as e:
         print(f"❌ Erro na conexão com banco: {e}")
         return False

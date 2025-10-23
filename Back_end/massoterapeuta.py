@@ -1,5 +1,5 @@
 # ===== IMPORTS NECESSÁRIOS =====
-from .database import get_connection  # Função para conectar ao banco PostgreSQL
+from Back_end.database import get_connection  # Função para conectar ao banco PostgreSQL
 from psycopg2 import OperationalError, DatabaseError, errors  # Drivers PostgreSQL e tratamento de erros
 from psycopg2.extras import RealDictCursor  # Cursor que retorna dados como dicionário
 from werkzeug.security import check_password_hash, generate_password_hash  # Criptografia de senhas
@@ -267,7 +267,7 @@ def atualizar_agendamento(agendamento_id, massoterapeuta_id, novo_status):
         
         # ===== NOTIFICAÇÕES POR WHATSAPP =====
         try:
-            from whatsapp_api import get_whatsapp_api
+            from Back_end.whatsapp_api import get_whatsapp_api
             
             if telefone_cliente and novo_status in ['confirmado', 'marcado', 'cancelado']:
                 # Formatar data para mensagem
@@ -453,7 +453,7 @@ def cancelar_agendamento_com_motivo(agendamento_id, massoterapeuta_id, motivo):
     Returns:
         Dict com success/error e dados do agendamento para email
     """
-    from .email_api import send_email  # Importa função de email
+    from Back_end.email_api import send_email  # Importa função de email
     
     conn = get_connection()  # Conecta ao banco
     if not conn:  # Se não conectou
