@@ -5,3 +5,4 @@ flask-jwt-extended
 dotenv
 psycopg2
 werkzeug
+requests
