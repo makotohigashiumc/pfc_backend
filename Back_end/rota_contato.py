@@ -4,7 +4,7 @@
 
 # ===== IMPORTS =====
 from flask import Blueprint, request, jsonify
-from .email_api import send_email
+from Back_end.email_api import send_email
 import os
 from dotenv import load_dotenv
 

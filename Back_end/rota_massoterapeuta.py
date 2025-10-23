@@ -1,8 +1,8 @@
 # ===== IMPORTS NECESSÁRIOS =====
 from flask import Blueprint, jsonify, request  # Flask: framework web, Blueprint: organiza rotas, jsonify: converte para JSON, request: dados da requisição
 from flask_jwt_extended import jwt_required, get_jwt_identity  # JWT: jwt_required = proteção de rota, get_jwt_identity = pega ID do usuário logado
-from .massoterapeuta import listar_agendamentos, listar_massoterapeutas, listar_clientes, listar_agendamentos_massoterapeuta, verificar_login, atualizar_conta, atualizar_agendamento, listar_agendamentos_por_status, buscar_paciente_com_historico, cancelar_agendamento_com_motivo  # Importa funções de lógica de negócio
-from .cliente import excluir_cliente  # Importa função para excluir cliente
+from Back_end.massoterapeuta import listar_agendamentos, listar_massoterapeutas, listar_clientes, listar_agendamentos_massoterapeuta, verificar_login, atualizar_conta, atualizar_agendamento, listar_agendamentos_por_status, buscar_paciente_com_historico, cancelar_agendamento_com_motivo  # Importa funções de lógica de negócio
+from Back_end.cliente import excluir_cliente  # Importa função para excluir cliente
 from flask_jwt_extended import create_access_token  # Criar tokens de autenticação
 # -------------------------------
 # Login do massoterapeuta

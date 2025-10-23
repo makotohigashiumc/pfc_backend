@@ -6,7 +6,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_tok
 # datetime: Manipulação de datas
 from datetime import datetime
 # Funções do módulo cliente: Lógica de negócio
-from .cliente import (
+from Back_end.cliente import (
     cadastrar_cliente,        # Registrar novo cliente
     verificar_login,          # Validar email/senha
     cadastrar_agendamento,    # Criar agendamento (com sintomas)
@@ -16,8 +16,8 @@ from .cliente import (
     buscar_cliente_por_id     # Buscar cliente específico
 )
 # Database e email: Conexão e notificações
-from .database import get_connection
-from .email_api import send_email, generate_confirmation_token, verify_confirmation_token
+from Back_end.database import get_connection
+from Back_end.email_api import send_email, generate_confirmation_token, verify_confirmation_token
 import os
 from werkzeug.security import generate_password_hash
 
@@ -48,8 +48,8 @@ def confirmar_email(token):
     - Sucesso: {"mensagem": "Email confirmado"}
     - Erro: {"erro": "Token inválido"}
     """
-    from .email_api import verify_confirmation_token
-    from . import database
+    from Back_end.email_api import verify_confirmation_token
+    from Back_end import database
     import traceback
     try:
         # ===== VALIDAÇÃO DO TOKEN =====
@@ -315,7 +315,7 @@ def api_me():
 @rota_clientes.route('/api/massoterapeuta/horarios_ocupados/<int:massoterapeuta_id>', methods=['GET'])
 @jwt_required()
 def horarios_ocupados_massoterapeuta(massoterapeuta_id):
-    from .database import get_connection
+    from Back_end.database import get_connection
     conn = get_connection()
     horarios = []
     if conn:
