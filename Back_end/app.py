@@ -54,7 +54,7 @@ CORS(app, resources={r"/api/*": {"origins": [
     FRONTEND_URL,
     "http://localhost:5173",
     "https://pfc-frontend-delta.vercel.app",
-    "https://hmmassoterapia.com.br"
+    "https://hmmassoterapia.com.br",
     "https://www.hmmassoterapia.com.br"
 ]}})
 
