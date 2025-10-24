@@ -50,7 +50,11 @@ jwt = JWTManager(app)
 # Sem isso, o navegador bloqueia as requisições por segurança
 import os
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
-CORS(app, resources={r"/api/*": {"origins": [FRONTEND_URL, "http://localhost:5173"]}})
+CORS(app, resources={r"/api/*": {"origins": [
+    FRONTEND_URL,
+    "http://localhost:5173",
+    "https://pfc-frontend-delta.vercel.app"
+]}})
 
 # ===== TRATAMENTO DE ERROS =====
 # Captura erros HTTP 422 (dados inválidos) e retorna JSON padronizado
