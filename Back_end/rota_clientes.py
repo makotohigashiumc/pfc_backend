@@ -97,8 +97,13 @@ def redefinir_senha():
     data = request.get_json()
     token = data.get('token')
     nova_senha = data.get('nova_senha')
+    import re
     if not token or not nova_senha:
         return jsonify({"erro": "Token e nova senha são obrigatórios."}), 400
+    # Validação de senha forte
+    padrao = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{7,}$'
+    if not re.match(padrao, nova_senha):
+        return jsonify({"erro": "A senha deve ter no mínimo 7 caracteres, uma letra maiúscula, uma letra minúscula, um número e um caractere especial."}), 400
     email = verify_confirmation_token(token)
     if not email:
         return jsonify({"erro": "Token inválido ou expirado."}), 400
@@ -142,9 +147,14 @@ def api_cadastrar_cliente():
         return jsonify({"erro": "Campos obrigatórios faltando"}), 400
     
     # ===== CHAMADA DA FUNÇÃO DE CADASTRO =====
+    import re
+    senha = data['senha']
+    padrao = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{7,}$'
+    if not re.match(padrao, senha):
+        return jsonify({"erro": "A senha deve ter no mínimo 7 caracteres, uma letra maiúscula, uma letra minúscula, um número e um caractere especial."}), 400
     resultado = cadastrar_cliente(
         data['nome'], data['telefone'], data['sexo'],
-        data['data_nascimento'], data['email'], data['senha']
+        data['data_nascimento'], data['email'], senha
     )
     
     # ===== TRATAMENTO DE ERROS =====
