@@ -81,7 +81,12 @@ def recuperar_senha():
         return jsonify({"erro": "Email é obrigatório."}), 400
     # Gera token de redefinição
     token = generate_confirmation_token(email)
-    reset_url = f"{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/redefinir-senha?token={token}"
+    env = os.getenv("ENV", "prod")
+    if env == "local":
+        frontend_url = os.getenv("FRONTEND_URL_LOCAL", "http://localhost:5173")
+    else:
+        frontend_url = os.getenv("FRONTEND_URL_PROD", "https://hmmassoterapia.com.br")
+    reset_url = f"{frontend_url}/redefinir-senha?token={token}"
     subject = "Recuperação de senha - Massoterapia TCC"
     content = f"Olá! Para redefinir sua senha, clique no link: {reset_url}\nEste link expira em 24 horas."
     status, resp = send_email(email, subject, content)

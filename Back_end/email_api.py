@@ -151,7 +151,12 @@ def send_confirmation_email(to_email):
     """
     token = generate_confirmation_token(to_email)  # Gera token único
     # Monta URL de confirmação apontando para o frontend
-    confirm_url = f"http://localhost:5173/confirmar-email/{token}"
+    env = os.getenv("ENV", "prod")
+    if env == "local":
+        frontend_url = os.getenv("FRONTEND_URL_LOCAL", "http://localhost:5173")
+    else:
+        frontend_url = os.getenv("FRONTEND_URL_PROD", "https://hmmassoterapia.com.br")
+    confirm_url = f"{frontend_url}/confirmar-email/{token}"
     subject = "Confirme seu e-mail"  # Assunto do email
     content = f"Olá! Clique no link para confirmar seu e-mail: {confirm_url}\nEste link expira em 24 horas."  # Conteúdo
     return send_email(to_email, subject, content)  # Envia email
