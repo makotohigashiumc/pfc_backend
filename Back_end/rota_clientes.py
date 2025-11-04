@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
 # datetime: Manipulação de datas
 from datetime import datetime
+import pytz
 # Funções do módulo cliente: Lógica de negócio
 from Back_end.cliente import (
     cadastrar_cliente,        # Registrar novo cliente
@@ -260,7 +261,16 @@ def api_cadastrar_agendamento():
     
     # ===== CRIAÇÃO DO AGENDAMENTO =====
     # Passa TODOS os parâmetros incluindo sintomas
-    agendamento = cadastrar_agendamento(user_id, data['massoterapeuta_id'], data['data_hora'], sintomas)
+    # Converte data_hora para datetime usando dateutil.parser.isoparse
+    from datetime import datetime
+    import pytz
+    tz_br = pytz.timezone('America/Sao_Paulo')
+    try:
+        # Interpreta como horário local de Brasília
+        data_hora_dt = tz_br.localize(datetime.strptime(data['data_hora'], '%Y-%m-%dT%H:%M:%S'))
+    except Exception as e:
+        return jsonify({"erro": f"Erro ao converter data_hora: {str(e)}"}), 400
+    agendamento = cadastrar_agendamento(user_id, data['massoterapeuta_id'], data_hora_dt, sintomas)
     
     # ===== TRATAMENTO DE ERRO =====
     if not agendamento:
@@ -279,11 +289,14 @@ def api_historico_agendamentos():
         user_id = get_jwt_identity()
         incluir_futuros = request.args.get("incluir_futuros", "true").lower() == "true"
         historico = historico_sessoes_cliente(user_id, incluir_futuros=incluir_futuros)
-        # Garante que data_hora seja string formatada
+        # Garante que data_hora seja string formatada no timezone de Brasília
+        import pytz
+        tz_br = pytz.timezone('America/Sao_Paulo')
         for h in historico:
             if isinstance(h.get('data_hora'), (str, type(None))):
                 continue
-            h['data_hora'] = h['data_hora'].strftime('%Y-%m-%d %H:%M')
+            # Converte para o timezone de Brasília antes de formatar
+            h['data_hora'] = h['data_hora'].astimezone(tz_br).strftime('%Y-%m-%dT%H:%M:%S')
         return jsonify(historico or [])
     except Exception as e:
         print(f"Erro ao buscar histórico de agendamentos: {e}")
@@ -343,7 +356,8 @@ def horarios_ocupados_massoterapeuta(massoterapeuta_id):
                 WHERE massoterapeuta_id = %s AND status IN ('marcado', 'confirmado', 'pendente')
             """, (massoterapeuta_id,))
             rows = cursor.fetchall()
-            horarios = [{"data_hora": row[0].strftime("%Y-%m-%d %H:%M:%S")} for row in rows]
+            tz_br = pytz.timezone('America/Sao_Paulo')
+            horarios = [{"data_hora": row[0].astimezone(tz_br).strftime("%Y-%m-%dT%H:%M:%S")} for row in rows]
         except Exception as e:
             print(f"Erro ao buscar horários ocupados: {e}")
         finally:
@@ -370,7 +384,7 @@ def cancelar_agendamento_cliente(agendamento_id):
             FROM agendamento a 
             JOIN cliente c ON a.cliente_id = c.id
             JOIN massoterapeuta m ON a.massoterapeuta_id = m.id
-            WHERE a.id = %s AND a.cliente_id = %s AND a.status IN ('marcado', 'pendente')
+            WHERE a.id = %s AND a.cliente_id = %s AND a.status IN ('marcado', 'pendente', 'confirmado')
         """, (agendamento_id, user_id))
         
         dados_agendamento = cursor.fetchone()
@@ -387,6 +401,30 @@ def cancelar_agendamento_cliente(agendamento_id):
         # Atualiza status para cancelado
         cursor.execute("UPDATE agendamento SET status = 'cancelado' WHERE id = %s", (agendamento_id,))
         conn.commit()
+
+        # Enviar e-mail para clínica
+        try:
+            from email_api import send_email
+            from flask import request
+            motivo = None
+            if request.is_json and 'motivo' in request.json:
+                motivo = request.json['motivo']
+            # Formatar data para email
+            if isinstance(data_hora, str):
+                from datetime import datetime
+                try:
+                    data_hora_dt = datetime.strptime(data_hora, "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    data_hora_dt = data_hora
+            else:
+                data_hora_dt = data_hora
+            data_formatada = data_hora_dt.strftime("%d/%m/%Y às %H:%M") if hasattr(data_hora_dt, 'strftime') else str(data_hora_dt)
+            email_destino = "hmmassoterapia7@gmail.com"
+            assunto = f"Cancelamento de agendamento - Cliente: {nome_cliente}"
+            corpo = f"Agendamento cancelado pelo cliente.\n\nCliente: {nome_cliente}\nTelefone: {telefone_cliente}\nProfissional: {massoterapeuta_nome}\nData: {data_formatada}\nMotivo: {motivo if motivo else 'Não informado'}\n"
+            send_email(email_destino, assunto, corpo)
+        except Exception as e:
+            print(f"Erro ao enviar e-mail de cancelamento: {e}")
         
         # ===== NOTIFICAÇÃO POR WHATSAPP =====
         try:

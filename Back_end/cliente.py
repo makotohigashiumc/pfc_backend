@@ -170,7 +170,8 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
     print(f"Tentando inserir agendamento: cliente_id={cliente_id}, massoterapeuta_id={massoterapeuta_id}, data_hora={data_hora}, sintomas={sintomas}, status={status}")
     
     # ===== CONVERSÃO DE DATA/HORA =====
-    # Aceita vários formatos de entrada e converte para datetime
+    # Aceita vários formatos de entrada e converte para datetime com timezone UTC
+    import pytz
     if isinstance(data_hora, str):
         try:
             # Formato vindo do frontend: "YYYY-MM-DDTHH:MM"
@@ -182,12 +183,16 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
                     data_hora = datetime.strptime(data_hora, "%Y-%m-%d %H:%M:%S")
                 except ValueError:
                     data_hora = datetime.strptime(data_hora, "%Y-%m-%d %H:%M")
+            # Assume que o horário recebido é no fuso do Brasil (America/Sao_Paulo)
+            tz_br = pytz.timezone('America/Sao_Paulo')
+            data_hora = tz_br.localize(data_hora)
         except ValueError as e:
             print(f"Erro ao converter data_hora: {e}")
             return None
 
     # ===== VALIDAÇÃO: IMPEDE AGENDAMENTOS PASSADOS =====
-    agora = datetime.now()
+    tz_br = pytz.timezone('America/Sao_Paulo')
+    agora = datetime.now(tz_br)
     if data_hora < agora:
         print("Erro: Não é possível agendar para horários passados.")
         return None
@@ -202,11 +207,11 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
         return None
 
     # ===== VALIDAÇÃO: HORÁRIO DE FUNCIONAMENTO =====
-    # Clínica funciona das 8:30 às 18:30
-    hora_inicio = time(8, 30)
-    hora_fim = time(18, 30)
+    # Clínica funciona das 8:00 às 18:00, sessões de 1h
+    hora_inicio = time(8, 0)
+    hora_fim = time(18, 0)
     if not (hora_inicio <= data_hora.time() <= hora_fim):
-        print("Erro: Horário fora do funcionamento da clínica (8:30 às 18:30)")
+        print("Erro: Horário fora do funcionamento da clínica (8:00 às 18:00)")
         return None
 
     # ===== CONEXÃO COM BANCO =====
