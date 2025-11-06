@@ -427,47 +427,7 @@ def cancelar_agendamento_cliente(agendamento_id):
             print(f"Erro ao enviar e-mail de cancelamento: {e}")
         
         # ===== NOTIFICAÇÃO POR WHATSAPP =====
-        try:
-            from whatsapp_api import get_whatsapp_api
-            
-            if telefone_cliente:
-                # Formatar data para mensagem
-                if isinstance(data_hora, str):
-                    from datetime import datetime
-                    try:
-                        data_hora = datetime.strptime(data_hora, "%Y-%m-%d %H:%M:%S")
-                    except ValueError:
-                        pass
-                
-                data_formatada = data_hora.strftime("%d/%m/%Y às %H:%M") if hasattr(data_hora, 'strftime') else str(data_hora)
-                
-                mensagem = f"""❌ *Cancelamento Confirmado*
-
-Olá {nome_cliente}!
-
-Seu agendamento foi cancelado:
-
-📅 Data: {data_formatada}
-👨‍⚕️ Profissional: {massoterapeuta_nome}
-
-Para reagendar, entre em contato:
-📞 (11) 97610-1010
-💻 Ou pelo nosso sistema online
-
-Obrigado pela compreensão! 💙"""
-
-                whatsapp = get_whatsapp_api()
-                resultado = whatsapp.send_message(telefone_cliente, mensagem)
-                
-                if resultado['success']:
-                    print(f"✅ WhatsApp de cancelamento enviado: {resultado.get('message_id')}")
-                else:
-                    print(f"❌ Erro ao enviar WhatsApp: {resultado.get('error')}")
-            else:
-                print("⚠️ Cliente sem telefone - WhatsApp de cancelamento não enviado")
-                
-        except Exception as e:
-            print(f"Erro ao enviar WhatsApp de cancelamento: {e}")
+        # Notificação por WhatsApp removida (integração desativada)
         
         cursor.close()
         conn.close()

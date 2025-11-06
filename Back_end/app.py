@@ -20,7 +20,6 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Rotas: Importa todas as URLs/endpoints da aplicação
 from Back_end.rota_clientes import rota_clientes         # APIs para clientes
 from Back_end.rota_massoterapeuta import rota_massoterapeuta  # APIs para massoterapeutas
-from Back_end.rota_whatsapp import rota_whatsapp         # APIs para WhatsApp
 from Back_end.rota_contato import rota_contato           # APIs para formulário de contato
 
 # ===== CARREGAMENTO DE VARIÁVEIS DE AMBIENTE =====
@@ -73,7 +72,6 @@ def handle_no_auth(err):
 # Conecta todas as URLs/endpoints à aplicação principal
 app.register_blueprint(rota_clientes)        # /api/clientes/*
 app.register_blueprint(rota_massoterapeuta)  # /api/massoterapeuta/*
-app.register_blueprint(rota_whatsapp)        # /api/whatsapp/*
 app.register_blueprint(rota_contato)         # /api/contato/*
 
 # ===== ROTA DE HEALTH CHECK =====

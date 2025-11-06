@@ -279,31 +279,8 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
                         print(f"Erro ao enviar e-mail de agendamento: {e}")
                     
                     # ===== NOTIFICAÇÃO POR WHATSAPP =====
-                    try:
-                        from Back_end.whatsapp_api import get_whatsapp_api
-                        
-                        if telefone_cliente:
-                            # Formatar data para mensagem
-                            data_formatada = data_hora.strftime("%d/%m/%Y às %H:%M")
-                            
-                            # Enviar confirmação de recebimento
-                            whatsapp = get_whatsapp_api()
-                            resultado = whatsapp.send_appointment_confirmation(
-                                phone=telefone_cliente,
-                                cliente_nome=nome_cliente,
-                                data_hora=data_formatada,
-                                massoterapeuta="Equipe HM Massoterapia"
-                            )
-                            
-                            if resultado['success']:
-                                print(f"✅ WhatsApp enviado com sucesso: {resultado.get('message_id')}")
-                            else:
-                                print(f"❌ Erro ao enviar WhatsApp: {resultado.get('error')}")
-                        else:
-                            print("⚠️ Cliente sem telefone cadastrado - WhatsApp não enviado")
-                            
-                    except Exception as e:
-                        print(f"Erro ao enviar WhatsApp de agendamento: {e}")
+                    # NOTIFICAÇÕES POR WHATSAPP removidas: passamos a usar apenas envio por e-mail (SendGrid)
+                    # Caso queira reativar notificações via outro canal, implemente aqui.
                         
             except Exception as e:
                 print(f"Erro ao enviar notificações de agendamento: {e}")

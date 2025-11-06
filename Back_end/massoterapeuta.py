@@ -221,117 +221,85 @@ def atualizar_agendamento(agendamento_id, massoterapeuta_id, novo_status):
         print("Erro: não foi possível conectar ao banco.")
         return False  # Retorna falso
 
-    cursor = None  # Inicializa cursor
-    try:  # Tenta executar
-        cursor = conn.cursor()  # Cria cursor
-        
+    cursor = None
+    try:
+        cursor = conn.cursor()
+
         # Verifica se o agendamento existe e pertence ao massoterapeuta
-        cursor.execute("""
-            SELECT id FROM agendamento 
-            WHERE id = %s AND massoterapeuta_id = %s
-        """, (agendamento_id, massoterapeuta_id))  # SQL para verificar propriedade
-        
-        if not cursor.fetchone():  # Se não encontrou
+        cursor.execute(
+            "SELECT id FROM agendamento WHERE id = %s AND massoterapeuta_id = %s",
+            (agendamento_id, massoterapeuta_id)
+        )
+
+        if not cursor.fetchone():
             print(f"Agendamento {agendamento_id} não encontrado ou não pertence ao massoterapeuta {massoterapeuta_id}")
-            return False  # Retorna falso
-        
+            return False
+
         # Busca dados do agendamento e cliente ANTES de atualizar
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT a.data_hora, c.nome, c.telefone, c.email, m.nome as massoterapeuta_nome
-            FROM agendamento a 
+            FROM agendamento a
             JOIN cliente c ON a.cliente_id = c.id
             JOIN massoterapeuta m ON a.massoterapeuta_id = m.id
             WHERE a.id = %s AND a.massoterapeuta_id = %s
-        """, (agendamento_id, massoterapeuta_id))
-        
+            """,
+            (agendamento_id, massoterapeuta_id),
+        )
+
         dados_agendamento = cursor.fetchone()
         if not dados_agendamento:
-            print(f"Erro: dados do agendamento não encontrados")
+            print("Erro: dados do agendamento não encontrados")
             return False
-            
+
         data_hora = dados_agendamento[0]
         nome_cliente = dados_agendamento[1]
         telefone_cliente = dados_agendamento[2]
         email_cliente = dados_agendamento[3]
         massoterapeuta_nome = dados_agendamento[4]
-        
+
         # Atualiza o status
-        cursor.execute("""
-            UPDATE agendamento 
-            SET status = %s 
-            WHERE id = %s AND massoterapeuta_id = %s
-        """, (novo_status, agendamento_id, massoterapeuta_id))  # SQL para atualizar status
-        
-        conn.commit()  # Confirma alteração
+        cursor.execute(
+            "UPDATE agendamento SET status = %s WHERE id = %s AND massoterapeuta_id = %s",
+            (novo_status, agendamento_id, massoterapeuta_id),
+        )
+
+        conn.commit()
         print(f"Agendamento {agendamento_id} atualizado para status '{novo_status}'")
-        
-        # ===== NOTIFICAÇÕES POR WHATSAPP =====
+
+        # Projeto não utiliza mais WhatsApp Cloud API — apenas registrar log local para auditoria
         try:
-            from Back_end.whatsapp_api import get_whatsapp_api
-            
-            if telefone_cliente and novo_status in ['confirmado', 'marcado', 'cancelado']:
-                # Formatar data para mensagem
-                if isinstance(data_hora, str):
-                    # Se for string, tentar converter
-                    from datetime import datetime
-                    try:
-                        data_hora = datetime.strptime(data_hora, "%Y-%m-%d %H:%M:%S")
-                    except ValueError:
-                        pass
-                
-                data_formatada = data_hora.strftime("%d/%m/%Y às %H:%M") if hasattr(data_hora, 'strftime') else str(data_hora)
-                
-                whatsapp = get_whatsapp_api()
-                
-                if novo_status in ['confirmado', 'marcado']:
-                    # Agendamento confirmado
-                    resultado = whatsapp.send_appointment_approved(
-                        phone=telefone_cliente,
-                        cliente_nome=nome_cliente,
-                        data_hora=data_formatada,
-                        massoterapeuta=massoterapeuta_nome,
-                        endereco="Rua das Flores, 123 - Centro"
-                    )
-                    
-                elif novo_status == 'cancelado':
-                    # Agendamento cancelado
-                    mensagem = f"""🚫 *Agendamento Cancelado*
-
-Olá {nome_cliente}!
-
-Infelizmente precisamos cancelar seu agendamento:
-
-📅 Data: {data_formatada}
-👨‍⚕️ Profissional: {massoterapeuta_nome}
-
-Entre em contato para reagendar:
-📞 (11) 97610-1010
-
-Pedimos desculpas pelo inconveniente."""
-
-                    resultado = whatsapp.send_message(telefone_cliente, mensagem)
-                
-                if resultado['success']:
-                    print(f"✅ WhatsApp de atualização enviado: {resultado.get('message_id')}")
-                else:
-                    print(f"❌ Erro ao enviar WhatsApp: {resultado.get('error')}")
+            if isinstance(data_hora, str):
+                from datetime import datetime as _dt
+                try:
+                    data_dt = _dt.strptime(data_hora, "%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    data_dt = data_hora
             else:
-                print(f"⚠️ WhatsApp não enviado - telefone: {telefone_cliente}, status: {novo_status}")
-                
-        except Exception as e:
-            print(f"Erro ao enviar WhatsApp de atualização: {e}")
-        
-        return True  # Retorna verdadeiro
-        
-    except Exception as e:  # Se der erro
-        conn.rollback()  # Desfaz alterações
-        print(f"Erro ao atualizar agendamento: {e}")
-        return False  # Retorna falso
-    finally:  # Sempre executa
-        if cursor:  # Se cursor existe
-            cursor.close()  # Fecha cursor
-        conn.close()  # Fecha conexão
+                data_dt = data_hora
 
+            try:
+                data_formatada = data_dt.strftime("%d/%m/%Y às %H:%M") if hasattr(data_dt, 'strftime') else str(data_dt)
+            except Exception:
+                data_formatada = str(data_dt)
+
+            print(f"LOG: notificação whatsapp desabilitada - agendamento={agendamento_id}, status={novo_status}, data_hora={data_formatada}, telefone={telefone_cliente}")
+        except Exception:
+            # Não falhar a atualização por causa do log
+            pass
+
+        return True
+    except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        print(f"Erro ao atualizar agendamento: {e}")
+        return False
+    finally:
+        if cursor:
+            cursor.close()
+        conn.close()
 def listar_agendamentos_por_status(massoterapeuta_id, status_lista):
     """
     Retorna agendamentos de um massoterapeuta filtrados por lista de status.
