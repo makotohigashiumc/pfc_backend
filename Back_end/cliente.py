@@ -204,7 +204,7 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
     dia_semana = data_hora.weekday()
     if dia_semana < 0 or dia_semana > 3:  # 0-3 = segunda a quinta
         print("Erro: Agendamentos só podem ser feitos de segunda a quinta-feira")
-        return None
+        return {"erro": "Agendamentos só podem ser feitos de segunda a quinta-feira"}
 
     # ===== VALIDAÇÃO: HORÁRIO DE FUNCIONAMENTO =====
     # Clínica funciona das 8:00 às 18:00, sessões de 1h
