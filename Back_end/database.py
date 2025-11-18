@@ -1,14 +1,8 @@
-# ===== IMPORTS =====
-# os: Para acessar variáveis de ambiente do sistema
 import os
-# dotenv: Carrega variáveis do arquivo .env (senhas, URLs de banco, etc.)
 from dotenv import load_dotenv
-# psycopg2: Driver para conectar Python com PostgreSQL
 import psycopg2
 from psycopg2 import OperationalError
 
-# ===== CARREGAMENTO DE CONFIGURAÇÕES =====
-# Carrega todas as variáveis do arquivo .env para uso seguro
 load_dotenv()
 
 def get_connection():
@@ -22,16 +16,12 @@ def get_connection():
     4. Retorna a conexão ou None se falhar
     """
     try:
-        # ===== OBTER URL DO BANCO =====
-        # Busca a URL de conexão nas variáveis de ambiente
         DATABASE_URL = os.getenv("DATABASE_URL")
         if not DATABASE_URL:
             print("❌ Erro: DATABASE_URL não encontrada no arquivo .env")
             return None
             
-        # ===== TENTATIVA DE CONEXÃO COM SSL =====
         print(f"🔗 Tentando conectar ao banco...")
-        # sslmode='require': Força conexão segura (criptografada)
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
         print("✅ Conexão estabelecida com sucesso!")
         return conn
@@ -39,8 +29,6 @@ def get_connection():
     except OperationalError as e:
         print(f"❌ Erro de conexão ao banco de dados: {e}")
         
-        # ===== TENTATIVA ALTERNATIVA SEM SSL =====
-        # Se SSL falhar, tenta conectar sem criptografia
         try:
             print("🔄 Tentando conectar sem SSL...")
             conn = psycopg2.connect(DATABASE_URL, sslmode='disable')
@@ -63,16 +51,12 @@ def test_connection():
     - Debugar problemas de conexão
     - Verificar se .env está correto
     """
-    # Tenta obter uma conexão
     conn = get_connection()
     if conn:
         print("Conexão ao Supabase bem-sucedida!")
-        # IMPORTANTE: Sempre fechar conexão após usar
         conn.close()
     else:
         print("Falha na conexão ao banco.")
 
-# ===== EXECUÇÃO DIRETA =====
-# Se este arquivo for executado diretamente, testa a conexão
 if __name__ == "__main__":
     test_connection()

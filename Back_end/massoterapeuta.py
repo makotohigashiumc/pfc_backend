@@ -1,199 +1,191 @@
-# ===== IMPORTS NECESSÁRIOS =====
-from Back_end.database import get_connection  # Função para conectar ao banco PostgreSQL
-from psycopg2 import OperationalError, DatabaseError, errors  # Drivers PostgreSQL e tratamento de erros
-from psycopg2.extras import RealDictCursor  # Cursor que retorna dados como dicionário
-from werkzeug.security import check_password_hash, generate_password_hash  # Criptografia de senhas
-from datetime import datetime  # Manipulação de datas e horários
-
-# -------------------------------
-# Funções CRUD para Massoterapeuta
-# -------------------------------
+from Back_end.database import get_connection
+from psycopg2 import OperationalError, DatabaseError, errors
+from psycopg2.extras import RealDictCursor
+from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import datetime
 
 def cadastrar_massoterapeuta(nome, telefone, sexo, data_nascimento, email, senha):
     """
     Cadastra um massoterapeuta no banco e retorna o ID.
     Não permite emails duplicados.
     """
-    conn = get_connection()  # Conecta ao banco de dados
-    if not conn:  # Se não conseguir conectar
+    conn = get_connection()
+    if not conn:
         print("Erro: não foi possível conectar ao banco.")
         return None
 
-    cursor = None  # Inicializa cursor
-    try:  # Tenta executar
-        cursor = conn.cursor()  # Cria cursor para executar comandos SQL
+    cursor = None
+    try:
+        cursor = conn.cursor()
 
-        # Verifica se o email já está cadastrado
-        cursor.execute("SELECT id FROM massoterapeuta WHERE email = %s", (email,))  # Busca email no banco
-        if cursor.fetchone():  # Se encontrou email
+        cursor.execute("SELECT id FROM massoterapeuta WHERE email = %s", (email,))
+        if cursor.fetchone():
             print(f"Erro: email '{email}' já cadastrado.")
             return None
 
-        senha_hash = generate_password_hash(senha)  # Criptografa a senha
+        senha_hash = generate_password_hash(senha)
         sql = """
             INSERT INTO massoterapeuta (nome, telefone, sexo, data_nascimento, email, senha_hash)
             VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
-        """  # SQL para inserir massoterapeuta e retornar o ID
-        cursor.execute(sql, (nome, telefone, sexo, data_nascimento, email, senha_hash))  # Executa insert
-        massoterapeuta_id = cursor.fetchone()[0]  # Pega o ID retornado
-        conn.commit()  # Confirma a transação no banco
+        """
+        cursor.execute(sql, (nome, telefone, sexo, data_nascimento, email, senha_hash))
+        massoterapeuta_id = cursor.fetchone()[0]
+        conn.commit()
         print(f"Massoterapeuta cadastrado com sucesso! ID: {massoterapeuta_id}")
-        return massoterapeuta_id  # Retorna o ID do massoterapeuta
-    except Exception as e:  # Se der erro
-        conn.rollback()  # Desfaz alterações
+        return massoterapeuta_id
+    except Exception as e:
+        conn.rollback()
         print(f"Erro ao cadastrar massoterapeuta: {e}")
-        return None  # Retorna nulo
-    finally:  # Sempre executa
-        if cursor:  # Se cursor existe
-            cursor.close()  # Fecha cursor
-        conn.close()  # Fecha conexão
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        conn.close()
 
 def verificar_login(email, senha):
     """
     Verifica login do massoterapeuta.
     Retorna usuário sem senha_hash ou None se inválido.
     """
-    conn = get_connection()  # Conecta ao banco
-    usuario = None  # Inicializa usuário
-    if conn:  # Se conectou
-        cursor = None  # Inicializa cursor
-        try:  # Tenta executar
-            cursor = conn.cursor(cursor_factory=RealDictCursor)  # Cursor que retorna dict
-            cursor.execute("SELECT * FROM massoterapeuta WHERE email = %s", (email,))  # Busca por email
-            usuario = cursor.fetchone()  # Pega o usuário
-            if usuario and check_password_hash(usuario['senha_hash'], senha):  # Se existe e senha confere
-                usuario.pop('senha_hash')  # Remove senha do retorno
-                return usuario  # Retorna usuário sem senha
-            return None  # Login inválido
-        except DatabaseError as e:  # Se der erro no banco
+    conn = get_connection()
+    usuario = None
+    if conn:
+        cursor = None
+        try:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute("SELECT * FROM massoterapeuta WHERE email = %s", (email,))
+            usuario = cursor.fetchone()
+            if usuario and check_password_hash(usuario['senha_hash'], senha):
+                usuario.pop('senha_hash')
+                return usuario
+            return None
+        except DatabaseError as e:
             print(f"Erro ao verificar login: {e}")
-            return None  # Retorna nulo
-        finally:  # Sempre executa
-            if cursor:  # Se cursor existe
-                cursor.close()  # Fecha cursor
-            conn.close()  # Fecha conexão
+            return None
+        finally:
+            if cursor:
+                cursor.close()
+            conn.close()
 
 def atualizar_conta(id, nome, telefone):
     """
     Atualiza nome e telefone do massoterapeuta.
     Email não pode ser alterado.
     """
-    conn = get_connection()  # Conecta ao banco
-    if conn:  # Se conectou
-        cursor = None  # Inicializa cursor
-        try:  # Tenta executar
-            cursor = conn.cursor()  # Cria cursor
-            sql = "UPDATE massoterapeuta SET nome = %s, telefone = %s WHERE id = %s"  # SQL update
-            cursor.execute(sql, (nome, telefone, id))  # Executa update
-            conn.commit()  # Confirma alteração
+    conn = get_connection()
+    if conn:
+        cursor = None
+        try:
+            cursor = conn.cursor()
+            sql = "UPDATE massoterapeuta SET nome = %s, telefone = %s WHERE id = %s"
+            cursor.execute(sql, (nome, telefone, id))
+            conn.commit()
             print(f"Massoterapeuta {id} atualizado com sucesso!")
-        except DatabaseError as e:  # Se der erro
-            conn.rollback()  # Desfaz alterações
+        except DatabaseError as e:
+            conn.rollback()
             print(f"Erro ao atualizar massoterapeuta: {e}")
-        finally:  # Sempre executa
-            if cursor:  # Se cursor existe
-                cursor.close()  # Fecha cursor
-            conn.close()  # Fecha conexão
+        finally:
+            if cursor:
+                cursor.close()
+            conn.close()
 
 def excluir_massoterapeuta(id):
     """
     Exclui um massoterapeuta do banco.
     """
-    conn = get_connection()  # Conecta ao banco
-    if conn:  # Se conectou
-        cursor = None  # Inicializa cursor
-        try:  # Tenta executar
-            cursor = conn.cursor()  # Cria cursor
-            sql = "DELETE FROM massoterapeuta WHERE id = %s"  # SQL para deletar
-            cursor.execute(sql, (id,))  # Executa delete
-            conn.commit()  # Confirma exclusão
+    conn = get_connection()
+    if conn:
+        cursor = None
+        try:
+            cursor = conn.cursor()
+            sql = "DELETE FROM massoterapeuta WHERE id = %s"
+            cursor.execute(sql, (id,))
+            conn.commit()
             print(f"Massoterapeuta {id} excluído com sucesso!")
-        except DatabaseError as e:  # Se der erro
-            conn.rollback()  # Desfaz alterações
+        except DatabaseError as e:
+            conn.rollback()
             print(f"Erro ao excluir massoterapeuta: {e}")
-        finally:  # Sempre executa
-            if cursor:  # Se cursor existe
-                cursor.close()  # Fecha cursor
-            conn.close()  # Fecha conexão
-
-# ===== FUNÇÕES DE LISTAGEM =====
+        finally:
+            if cursor:
+                cursor.close()
+            conn.close()
 
 def listar_massoterapeutas():
     """
     Retorna todos os massoterapeutas.
     """
-    conn = get_connection()  # Conecta ao banco
-    massoterapeutas = []  # Lista vazia
-    if conn:  # Se conectou
-        cursor = None  # Inicializa cursor
-        try:  # Tenta executar
-            cursor = conn.cursor(cursor_factory=RealDictCursor)  # Cursor que retorna dict
-            cursor.execute("SELECT id, nome, telefone, email FROM massoterapeuta ORDER BY nome ASC")  # Busca todos
-            massoterapeutas = cursor.fetchall()  # Pega todos os resultados
-        except DatabaseError as e:  # Se der erro
+    conn = get_connection()
+    massoterapeutas = []
+    if conn:
+        cursor = None
+        try:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute("SELECT id, nome, telefone, email FROM massoterapeuta ORDER BY nome ASC")
+            massoterapeutas = cursor.fetchall()
+        except DatabaseError as e:
             print(f"Erro ao buscar massoterapeutas: {e}")
-        finally:  # Sempre executa
-            if cursor:  # Se cursor existe
-                cursor.close()  # Fecha cursor
-            conn.close()  # Fecha conexão
-    return massoterapeutas  # Retorna lista
+        finally:
+            if cursor:
+                cursor.close()
+            conn.close()
+    return massoterapeutas
 
 def listar_clientes():
     """
     Retorna todos os clientes.
     """
-    conn = get_connection()  # Conecta ao banco
-    clientes = []  # Lista vazia
-    if conn:  # Se conectou
-        cursor = None  # Inicializa cursor
-        try:  # Tenta executar
-            cursor = conn.cursor(cursor_factory=RealDictCursor)  # Cursor que retorna dict
-            cursor.execute("SELECT id, nome, telefone, email, created_at FROM cliente ORDER BY nome ASC")  # Busca clientes
-            clientes = cursor.fetchall()  # Pega todos os resultados
-        except DatabaseError as e:  # Se der erro
+    conn = get_connection()
+    clientes = []
+    if conn:
+        cursor = None
+        try:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute("SELECT id, nome, telefone, email, created_at FROM cliente ORDER BY nome ASC")
+            clientes = cursor.fetchall()
+        except DatabaseError as e:
             print(f"Erro ao buscar clientes: {e}")
-        finally:  # Sempre executa
-            if cursor:  # Se cursor existe
-                cursor.close()  # Fecha cursor
-            conn.close()  # Fecha conexão
-    return clientes  # Retorna lista
+        finally:
+            if cursor:
+                cursor.close()
+            conn.close()
+    return clientes
 
 def listar_agendamentos():
     """
     Retorna todos os agendamentos com dados do cliente.
     """
-    conn = get_connection()  # Conecta ao banco
-    agendamentos = []  # Lista vazia
-    if conn:  # Se conectou
-        cursor = None  # Inicializa cursor
-        try:  # Tenta executar
-            cursor = conn.cursor(cursor_factory=RealDictCursor)  # Cursor que retorna dict
+    conn = get_connection()
+    agendamentos = []
+    if conn:
+        cursor = None
+        try:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
             cursor.execute("""
                 SELECT a.id, a.cliente_id, c.nome AS cliente_nome, a.massoterapeuta_id, a.data_hora, a.status, a.criado_em
                 FROM agendamento a
                 JOIN cliente c ON a.cliente_id = c.id
                 ORDER BY a.data_hora DESC
-            """)  # SQL com JOIN para buscar agendamentos e nomes dos clientes
-            agendamentos = cursor.fetchall()  # Pega todos os resultados
-        except DatabaseError as e:  # Se der erro
+            """)
+            agendamentos = cursor.fetchall()
+        except DatabaseError as e:
             print(f"Erro ao buscar agendamentos: {e}")
-        finally:  # Sempre executa
-            if cursor:  # Se cursor existe
-                cursor.close()  # Fecha cursor
-            conn.close()  # Fecha conexão
-    return agendamentos  # Retorna lista
+        finally:
+            if cursor:
+                cursor.close()
+            conn.close()
+    return agendamentos
 
 def listar_agendamentos_massoterapeuta(massoterapeuta_id):
     """
     Retorna agendamentos de um massoterapeuta específico.
     """
-    conn = get_connection()  # Conecta ao banco
-    agendamentos = []  # Lista vazia
-    if conn:  # Se conectou
-        cursor = None  # Inicializa cursor
-        try:  # Tenta executar
-            cursor = conn.cursor(cursor_factory=RealDictCursor)  # Cursor que retorna dict
+    conn = get_connection()
+    agendamentos = []
+    if conn:
+        cursor = None
+        try:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
             cursor.execute("""
                 SELECT a.id, a.cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone, 
                        c.email AS cliente_email, a.data_hora, a.sintomas, a.status, a.criado_em
@@ -201,31 +193,30 @@ def listar_agendamentos_massoterapeuta(massoterapeuta_id):
                 JOIN cliente c ON a.cliente_id = c.id
                 WHERE a.massoterapeuta_id = %s
                 ORDER BY a.data_hora DESC
-            """, (massoterapeuta_id,))  # SQL para buscar agendamentos específicos do massoterapeuta
-            agendamentos = cursor.fetchall()  # Pega todos os resultados
-        except DatabaseError as e:  # Se der erro
+            """, (massoterapeuta_id,))
+            agendamentos = cursor.fetchall()
+        except DatabaseError as e:
             print(f"Erro ao buscar agendamentos do massoterapeuta: {e}")
-        finally:  # Sempre executa
-            if cursor:  # Se cursor existe
-                cursor.close()  # Fecha cursor
-            conn.close()  # Fecha conexão
-    return agendamentos  # Retorna lista
+        finally:
+            if cursor:
+                cursor.close()
+            conn.close()
+    return agendamentos
 
 def atualizar_agendamento(agendamento_id, massoterapeuta_id, novo_status):
     """
     Atualiza o status de um agendamento específico do massoterapeuta.
     Verifica se o agendamento pertence ao massoterapeuta antes de atualizar.
     """
-    conn = get_connection()  # Conecta ao banco
-    if not conn:  # Se não conectou
+    conn = get_connection()
+    if not conn:
         print("Erro: não foi possível conectar ao banco.")
-        return False  # Retorna falso
+        return False
 
     cursor = None
     try:
         cursor = conn.cursor()
 
-        # Verifica se o agendamento existe e pertence ao massoterapeuta
         cursor.execute(
             "SELECT id FROM agendamento WHERE id = %s AND massoterapeuta_id = %s",
             (agendamento_id, massoterapeuta_id)
@@ -235,7 +226,6 @@ def atualizar_agendamento(agendamento_id, massoterapeuta_id, novo_status):
             print(f"Agendamento {agendamento_id} não encontrado ou não pertence ao massoterapeuta {massoterapeuta_id}")
             return False
 
-        # Busca dados do agendamento e cliente ANTES de atualizar
         cursor.execute(
             """
             SELECT a.data_hora, c.nome, c.telefone, c.email, m.nome as massoterapeuta_nome
@@ -258,7 +248,6 @@ def atualizar_agendamento(agendamento_id, massoterapeuta_id, novo_status):
         email_cliente = dados_agendamento[3]
         massoterapeuta_nome = dados_agendamento[4]
 
-        # Atualiza o status
         cursor.execute(
             "UPDATE agendamento SET status = %s WHERE id = %s AND massoterapeuta_id = %s",
             (novo_status, agendamento_id, massoterapeuta_id),
@@ -267,7 +256,6 @@ def atualizar_agendamento(agendamento_id, massoterapeuta_id, novo_status):
         conn.commit()
         print(f"Agendamento {agendamento_id} atualizado para status '{novo_status}'")
 
-        # Projeto não utiliza mais WhatsApp Cloud API — apenas registrar log local para auditoria
         try:
             if isinstance(data_hora, str):
                 from datetime import datetime as _dt
@@ -285,7 +273,6 @@ def atualizar_agendamento(agendamento_id, massoterapeuta_id, novo_status):
 
             print(f"LOG: notificação whatsapp desabilitada - agendamento={agendamento_id}, status={novo_status}, data_hora={data_formatada}, telefone={telefone_cliente}")
         except Exception:
-            # Não falhar a atualização por causa do log
             pass
 
         return True
@@ -314,7 +301,6 @@ def listar_agendamentos_por_status(massoterapeuta_id, status_lista):
         try:
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             
-            # Cria placeholders para os status (%s, %s, ...)
             placeholders = ', '.join(['%s'] * len(status_lista))
             
             cursor.execute(f"""
@@ -344,15 +330,14 @@ def buscar_paciente_com_historico(massoterapeuta_id, nome_busca):
     Returns:
         Dict com dados do paciente e lista de agendamentos
     """
-    conn = get_connection()  # Conecta ao banco
-    resultado = {"pacientes": [], "total_encontrados": 0}  # Estrutura de retorno
+    conn = get_connection()
+    resultado = {"pacientes": [], "total_encontrados": 0}
     
-    if conn:  # Se conectou
-        cursor = None  # Inicializa cursor
-        try:  # Tenta executar
-            cursor = conn.cursor(cursor_factory=RealDictCursor)  # Cursor que retorna dict
+    if conn:
+        cursor = None
+        try:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
             
-            # Busca pacientes que tenham agendamentos com este massoterapeuta
             cursor.execute("""
                 SELECT DISTINCT c.id, c.nome, c.telefone, c.email, c.sexo, c.data_nascimento, c.created_at
                 FROM cliente c
@@ -360,12 +345,11 @@ def buscar_paciente_com_historico(massoterapeuta_id, nome_busca):
                 WHERE a.massoterapeuta_id = %s 
                 AND LOWER(c.nome) LIKE LOWER(%s)
                 ORDER BY c.nome ASC
-            """, (massoterapeuta_id, f'%{nome_busca}%'))  # SQL para buscar pacientes por nome
+            """, (massoterapeuta_id, f'%{nome_busca}%'))
             
-            pacientes = cursor.fetchall()  # Pega todos os pacientes
+            pacientes = cursor.fetchall()
             
-            # Para cada paciente, busca o histórico de agendamentos
-            for paciente in pacientes:  # Loop pelos pacientes
+            for paciente in pacientes:
                 cursor.execute("""
                     SELECT a.id, a.data_hora, a.sintomas, a.status, a.criado_em,
                            CASE 
@@ -375,15 +359,14 @@ def buscar_paciente_com_historico(massoterapeuta_id, nome_busca):
                     FROM agendamento a
                     WHERE a.cliente_id = %s AND a.massoterapeuta_id = %s
                     ORDER BY a.data_hora DESC
-                """, (paciente['id'], massoterapeuta_id))  # SQL para buscar histórico específico
+                """, (paciente['id'], massoterapeuta_id))
                 
-                agendamentos = cursor.fetchall()  # Pega todos os agendamentos do paciente
+                agendamentos = cursor.fetchall()
                 
-                # Separa agendamentos futuros e passados
-                agendamentos_futuros = [a for a in agendamentos if a['periodo'] == 'futuro']  # Lista futuros
-                agendamentos_passados = [a for a in agendamentos if a['periodo'] == 'passado']  # Lista passados
+                agendamentos_futuros = [a for a in agendamentos if a['periodo'] == 'futuro']
+                agendamentos_passados = [a for a in agendamentos if a['periodo'] == 'passado']
                 
-                paciente_completo = {  # Monta dados completos do paciente
+                paciente_completo = {
                     "id": paciente["id"],
                     "nome": paciente["nome"],
                     "telefone": paciente["telefone"],
@@ -396,20 +379,20 @@ def buscar_paciente_com_historico(massoterapeuta_id, nome_busca):
                     "total_sessoes": len(agendamentos),
                     "sessoes_futuras": len(agendamentos_futuros),
                     "sessoes_passadas": len(agendamentos_passados)
-                }  # Estrutura completa com estatísticas
+                }
                 
-                resultado["pacientes"].append(paciente_completo)  # Adiciona à lista
+                resultado["pacientes"].append(paciente_completo)
             
-            resultado["total_encontrados"] = len(pacientes)  # Conta total
+            resultado["total_encontrados"] = len(pacientes)
             
-        except DatabaseError as e:  # Se der erro
+        except DatabaseError as e:
             print(f"Erro ao buscar paciente: {e}")
-        finally:  # Sempre executa
-            if cursor:  # Se cursor existe
-                cursor.close()  # Fecha cursor
-            conn.close()  # Fecha conexão
+        finally:
+            if cursor:
+                cursor.close()
+            conn.close()
     
-    return resultado  # Retorna dados completos
+    return resultado
 
 def cancelar_agendamento_com_motivo(agendamento_id, massoterapeuta_id, motivo):
     """
@@ -421,17 +404,16 @@ def cancelar_agendamento_com_motivo(agendamento_id, massoterapeuta_id, motivo):
     Returns:
         Dict com success/error e dados do agendamento para email
     """
-    from Back_end.email_api import send_email  # Importa função de email
+    from Back_end.email_api import send_email
     
-    conn = get_connection()  # Conecta ao banco
-    if not conn:  # Se não conectou
+    conn = get_connection()
+    if not conn:
         return {"success": False, "erro": "Erro de conexão com banco de dados"}
 
-    cursor = None  # Inicializa cursor
-    try:  # Tenta executar
-        cursor = conn.cursor(cursor_factory=RealDictCursor)  # Cursor que retorna dict
+    cursor = None
+    try:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Busca dados completos do agendamento antes de cancelar
         cursor.execute("""
             SELECT a.id, a.data_hora, a.status, a.criado_em,
                    c.nome as cliente_nome, c.email as cliente_email, c.telefone as cliente_telefone,
@@ -440,39 +422,36 @@ def cancelar_agendamento_com_motivo(agendamento_id, massoterapeuta_id, motivo):
             JOIN cliente c ON a.cliente_id = c.id
             JOIN massoterapeuta m ON a.massoterapeuta_id = m.id
             WHERE a.id = %s AND a.massoterapeuta_id = %s
-        """, (agendamento_id, massoterapeuta_id))  # SQL para buscar dados completos
+        """, (agendamento_id, massoterapeuta_id))
         
-        agendamento = cursor.fetchone()  # Pega o agendamento
+        agendamento = cursor.fetchone()
         
-        if not agendamento:  # Se não encontrou
+        if not agendamento:
             return {"success": False, "erro": "Agendamento não encontrado ou você não tem permissão"}
         
-        if agendamento['status'] == 'cancelado':  # Se já cancelado
+        if agendamento['status'] == 'cancelado':
             return {"success": False, "erro": "Este agendamento já foi cancelado"}
         
-        if agendamento['status'] == 'concluido':  # Se já concluído
+        if agendamento['status'] == 'concluido':
             return {"success": False, "erro": "Não é possível cancelar um agendamento já concluído"}
         
-        # Atualiza o status para cancelado
         cursor.execute("""
             UPDATE agendamento 
             SET status = 'cancelado'
             WHERE id = %s AND massoterapeuta_id = %s
-        """, (agendamento_id, massoterapeuta_id))  # SQL para cancelar agendamento
+        """, (agendamento_id, massoterapeuta_id))
         
-        # Registra o motivo do cancelamento (opcional: criar tabela para histórico)
         cursor.execute("""
             INSERT INTO agendamento_historico (agendamento_id, acao, motivo, criado_em)
             VALUES (%s, 'cancelamento', %s, NOW())
             ON CONFLICT DO NOTHING
-        """, (agendamento_id, motivo))  # SQL para registrar histórico
+        """, (agendamento_id, motivo))
         
-        conn.commit()  # Confirma alterações
+        conn.commit()
         
-        # Envia email de notificação para o cliente
-        try:  # Tenta enviar email
-            data_formatada = agendamento['data_hora'].strftime("%d/%m/%Y às %H:%M")  # Formata data
-            assunto = "🚫 Agendamento Cancelado - HM Massoterapia"  # Assunto do email
+        try:
+            data_formatada = agendamento['data_hora'].strftime("%d/%m/%Y às %H:%M")
+            assunto = "🚫 Agendamento Cancelado - HM Massoterapia"
             
             conteudo = f"""
 Olá, {agendamento['cliente_nome']}!
@@ -493,11 +472,11 @@ Para reagendar, acesse: http://localhost:5173
 
 Atenciosamente,
 Equipe HM Massoterapia
-            """  # Template do email
+            """
             
-            status_email, resposta_email = send_email(agendamento['cliente_email'], assunto, conteudo)  # Envia email
+            status_email, resposta_email = send_email(agendamento['cliente_email'], assunto, conteudo)
             
-            return {  # Retorna sucesso com detalhes
+            return {
                 "success": True, 
                 "mensagem": "Agendamento cancelado com sucesso",
                 "agendamento": dict(agendamento),
@@ -505,10 +484,9 @@ Equipe HM Massoterapia
                 "detalhes_email": resposta_email if status_email != 202 else "Email enviado com sucesso"
             }
             
-        except Exception as email_error:  # Se falhar o email
-            # Mesmo se o email falhar, o cancelamento foi realizado
+        except Exception as email_error:
             print(f"Erro ao enviar email: {email_error}")
-            return {  # Retorna sucesso mesmo com erro de email
+            return {
                 "success": True,
                 "mensagem": "Agendamento cancelado com sucesso (erro ao enviar email)",
                 "agendamento": dict(agendamento),
@@ -516,12 +494,12 @@ Equipe HM Massoterapia
                 "erro_email": str(email_error)
             }
         
-    except Exception as e:  # Se der erro geral
-        conn.rollback()  # Desfaz alterações
+    except Exception as e:
+        conn.rollback()
         print(f"Erro ao cancelar agendamento: {e}")
-        return {"success": False, "erro": f"Erro interno: {str(e)}"}  # Retorna erro
+        return {"success": False, "erro": f"Erro interno: {str(e)}"}
         
-    finally:  # Sempre executa
-        if cursor:  # Se cursor existe
-            cursor.close()  # Fecha cursor
-        conn.close()  # Fecha conexão
+    finally:
+        if cursor:
+            cursor.close()
+        conn.close()
