@@ -2,6 +2,7 @@ from Back_end.database import get_connection
 from psycopg2 import DatabaseError, errors
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, time
+import re
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # ================================================================
@@ -32,6 +33,22 @@ def cadastrar_cliente(nome, telefone, sexo, data_nascimento, email, senha):
     """
     
     print(f"Tentando inserir cliente: nome={nome}, telefone={telefone}, sexo={sexo}, data_nascimento={data_nascimento}, email={email}")
+
+    # Validação do telefone: remover caracteres não numéricos e aceitar exatamente 11 dígitos
+    def validar_telefone(telefone_raw):
+        if not telefone_raw:
+            return None
+        apenas_digitos = re.sub(r"\D", "", telefone_raw)
+        if len(apenas_digitos) != 11:
+            return None
+        return apenas_digitos
+
+    telefone_limpo = validar_telefone(telefone)
+    if not telefone_limpo:
+        print(f"Erro: telefone '{telefone}' inválido")
+        return {"erro": "Número de telefone inválido. Informe um celular com 11 dígitos."}
+    # usar formato limpo (apenas dígitos) internamente
+    telefone = telefone_limpo
     
     if not data_nascimento or sexo not in ["Masculino", "Feminino"]:
         print(f"Erro: sexo ou data_nascimento inválido")
@@ -246,6 +263,20 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
 
 def atualizar_conta(id, nome, telefone, email):
     conn = get_connection()
+    # Validação simples do telefone antes de atualizar (apenas 11 dígitos)
+    def validar_telefone_simples(telefone_raw):
+        if not telefone_raw:
+            return None
+        apenas_digitos = re.sub(r"\D", "", telefone_raw)
+        if len(apenas_digitos) != 11:
+            return None
+        return apenas_digitos
+
+    telefone_limpo = validar_telefone_simples(telefone)
+    if not telefone_limpo:
+        print(f"Erro: telefone '{telefone}' inválido ao atualizar conta")
+        return {"erro": "Número de telefone inválido. Informe um celular com 11 dígitos."}
+    telefone = telefone_limpo
     if conn:
         cursor = None
         try:
