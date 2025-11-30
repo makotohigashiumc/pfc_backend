@@ -196,8 +196,6 @@ def api_cadastrar_agendamento():
     """
     PROPÓSITO: Cria novo agendamento com descrição de sintomas
     
-    ⭐ ESTA É A FUNCIONALIDADE PRINCIPAL QUE IMPLEMENTAMOS ⭐
-    
     DADOS OBRIGATÓRIOS (JSON):
     - massoterapeuta_id: ID do profissional escolhido
     - data_hora: "YYYY-MM-DDTHH:MM" (formato ISO)
