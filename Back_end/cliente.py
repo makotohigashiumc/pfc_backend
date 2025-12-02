@@ -55,10 +55,21 @@ def cadastrar_cliente(nome, telefone, sexo, data_nascimento, email, senha):
         return None
     
     try:
-        data_nascimento = datetime.strptime(data_nascimento, "%Y-%m-%d").date()
+        data_nascimento_dt = datetime.strptime(data_nascimento, "%Y-%m-%d").date()
     except ValueError:
         print(f"Erro: data_nascimento '{data_nascimento}' inválida")
-        return None
+        return {"erro": "Data de nascimento inválida."}
+
+    # Validação de idade
+    hoje = datetime.today().date()
+    idade = hoje.year - data_nascimento_dt.year - ((hoje.month, hoje.day) < (data_nascimento_dt.month, data_nascimento_dt.day))
+    if data_nascimento_dt > hoje:
+        print(f"Erro: data_nascimento '{data_nascimento}' é futura")
+        return {"erro": "Data de nascimento não pode ser futura."}
+    if idade < 10 or idade > 99:
+        print(f"Erro: idade {idade} fora do permitido")
+        return {"erro": "Idade permitida: entre 10 e 99 anos."}
+    data_nascimento = data_nascimento_dt
     
     conn = get_connection()
     if conn:

@@ -9,6 +9,13 @@ def cadastrar_massoterapeuta(nome, telefone, sexo, data_nascimento, email, senha
     Cadastra um massoterapeuta no banco e retorna o ID.
     Não permite emails duplicados.
     """
+    try:
+        data_nascimento_dt = datetime.strptime(data_nascimento, "%Y-%m-%d").date()
+    except ValueError:
+        print(f"Erro: data_nascimento '{data_nascimento}' inválida")
+        return None
+    data_nascimento = data_nascimento_dt
+
     conn = get_connection()
     if not conn:
         print("Erro: não foi possível conectar ao banco.")
