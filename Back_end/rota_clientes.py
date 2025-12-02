@@ -141,9 +141,10 @@ def api_cadastrar_cliente():
     padrao = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{7,}$'
     if not re.match(padrao, senha):
         return jsonify({"erro": "A senha deve ter no mínimo 7 caracteres, uma letra maiúscula, uma letra minúscula, um número e um caractere especial."}), 400
+    email = data['email'].lower()
     resultado = cadastrar_cliente(
         data['nome'], data['telefone'], data['sexo'],
-        data['data_nascimento'], data['email'], senha
+        data['data_nascimento'], email, senha
     )
     
     if isinstance(resultado, dict) and "erro" in resultado:
@@ -175,7 +176,8 @@ def api_login():
     if not data or not all(k in data for k in ("email", "senha")):
         return jsonify({"erro": "Campos obrigatórios faltando"}), 400
     
-    usuario = verificar_login(data['email'], data['senha'])
+    email = data['email'].lower()
+    usuario = verificar_login(email, data['senha'])
     if usuario:
         token = create_access_token(identity=str(usuario['id']))
         return jsonify({
@@ -195,8 +197,6 @@ def api_login():
 def api_cadastrar_agendamento():
     """
     PROPÓSITO: Cria novo agendamento com descrição de sintomas
-    
-    ⭐ ESTA É A FUNCIONALIDADE PRINCIPAL QUE IMPLEMENTAMOS ⭐
     
     DADOS OBRIGATÓRIOS (JSON):
     - massoterapeuta_id: ID do profissional escolhido

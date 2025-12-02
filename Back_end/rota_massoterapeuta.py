@@ -9,7 +9,8 @@ rota_massoterapeuta = Blueprint('rota_massoterapeuta', __name__)
 @rota_massoterapeuta.route('/api/massoterapeuta/login', methods=['POST'])
 def login_massoterapeuta():
     data = request.get_json()
-    usuario = verificar_login(data['email'], data['senha'])
+    email = data['email'].lower()
+    usuario = verificar_login(email, data['senha'])
     if usuario:
         token = create_access_token(identity=str(usuario['id']))
         return jsonify({"mensagem": "Login realizado com sucesso", "usuario": usuario, "token": token})

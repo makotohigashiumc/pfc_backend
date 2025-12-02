@@ -9,6 +9,7 @@ def cadastrar_massoterapeuta(nome, telefone, sexo, data_nascimento, email, senha
     Cadastra um massoterapeuta no banco e retorna o ID.
     Não permite emails duplicados.
     """
+    email = email.lower()
     try:
         data_nascimento_dt = datetime.strptime(data_nascimento, "%Y-%m-%d").date()
     except ValueError:
@@ -55,6 +56,7 @@ def verificar_login(email, senha):
     Verifica login do massoterapeuta.
     Retorna usuário sem senha_hash ou None se inválido.
     """
+    email = email.lower()
     conn = get_connection()
     usuario = None
     if conn:

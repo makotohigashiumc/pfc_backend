@@ -32,6 +32,7 @@ def cadastrar_cliente(nome, telefone, sexo, data_nascimento, email, senha):
     - Erro: Dicionário com mensagem de erro
     """
     
+    email = email.lower()
     print(f"Tentando inserir cliente: nome={nome}, telefone={telefone}, sexo={sexo}, data_nascimento={data_nascimento}, email={email}")
 
     # Validação do telefone: remover caracteres não numéricos e aceitar exatamente 11 dígitos
@@ -118,6 +119,7 @@ def cadastrar_cliente(nome, telefone, sexo, data_nascimento, email, senha):
             conn.close()
 
 def verificar_login(email, senha):
+    email = email.lower()
     conn = get_connection()
     usuario = None
     if conn:
