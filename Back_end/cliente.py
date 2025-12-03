@@ -48,7 +48,7 @@ def cadastrar_cliente(nome, telefone, sexo, data_nascimento, email, senha):
     if not telefone_limpo:
         print(f"Erro: telefone '{telefone}' inválido")
         return {"erro": "Número de telefone inválido. Informe um celular com 11 dígitos."}
-    # usar formato limpo (apenas dígitos) internamente
+   
     telefone = telefone_limpo
     
     if not data_nascimento or sexo not in ["Masculino", "Feminino"]:
@@ -197,7 +197,7 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
         return None
 
     dia_semana = data_hora.weekday()
-    if dia_semana < 0 or dia_semana > 3:  # 0-3 = segunda a quinta
+    if dia_semana < 0 or dia_semana > 3: 
         print("Erro: Agendamentos só podem ser feitos de segunda a quinta-feira")
         return {"erro": "Agendamentos só podem ser feitos de segunda a quinta-feira"}
 
@@ -247,9 +247,9 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
                 cliente = cursor.fetchone()
                 
                 if cliente:
-                    destinatario = cliente[0]  # email
-                    nome_cliente = cliente[1]  # nome
-                    telefone_cliente = cliente[2]  # telefone
+                    destinatario = cliente[0]  
+                    nome_cliente = cliente[1]  
+                    telefone_cliente = cliente[2]  
                     
                     try:
                         from Back_end.email_api import sendgrid_email_api_massoterapia
@@ -260,7 +260,6 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
                     except Exception as e:
                         print(f"Erro ao enviar e-mail de agendamento: {e}")
                     
-                    # Caso queira reativar notificações via outro canal, implemente aqui.
                         
             except Exception as e:
                 print(f"Erro ao enviar notificações de agendamento: {e}")

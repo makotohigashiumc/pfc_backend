@@ -196,7 +196,7 @@ def atualizar_status_agendamento(agendamento_id):
             
         # Valida status permitidos (case insensitive)
         status_validos = ['pendente', 'marcado', 'confirmado', 'cancelado', 'concluido']
-        novo_status = novo_status.lower()  # Converte para minúsculo
+        novo_status = novo_status.lower()  
         if novo_status not in status_validos:
             return jsonify({"erro": f"Status inválido. Permitidos: {status_validos}"}), 400
             
