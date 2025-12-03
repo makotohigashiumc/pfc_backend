@@ -239,7 +239,20 @@ def api_cadastrar_agendamento():
     
     if not agendamento:
         return jsonify({"erro": "Falha ao criar agendamento"}), 400
-    
+    # Ajusta fuso horário para exibir ao cliente no horário de Brasília
+    try:
+        tz_br = pytz.timezone('America/Sao_Paulo')
+        # agendamento é uma tupla/lista: (id, cliente_id, massoterapeuta_id, data_hora, sintomas, status)
+        if isinstance(agendamento, (list, tuple)) and len(agendamento) >= 4 and agendamento[3]:
+            data_hora_db = agendamento[3]
+            if hasattr(data_hora_db, 'astimezone'):
+                # converte para fuso de Brasília e formata
+                data_hora_str = data_hora_db.astimezone(tz_br).strftime('%Y-%m-%dT%H:%M:%S')
+                agendamento = list(agendamento)
+                agendamento[3] = data_hora_str
+    except Exception as e:
+        print(f"Aviso: não foi possível normalizar timezone do agendamento: {e}")
+
     return jsonify({"mensagem": "Agendamento cadastrado com sucesso", "agendamento": agendamento}), 201
 
 # -------------------------------
@@ -255,9 +268,22 @@ def api_historico_agendamentos():
         import pytz
         tz_br = pytz.timezone('America/Sao_Paulo')
         for h in historico:
-            if isinstance(h.get('data_hora'), (str, type(None))):
+            dh = h.get('data_hora')
+            if dh is None:
                 continue
-            h['data_hora'] = h['data_hora'].astimezone(tz_br).strftime('%Y-%m-%dT%H:%M:%S')
+            # Se datetime já vier com tzinfo, converte; se vier naive, assume fuso de SP
+            try:
+                if hasattr(dh, 'tzinfo') and dh.tzinfo is not None:
+                    h['data_hora'] = dh.astimezone(tz_br).strftime('%Y-%m-%dT%H:%M:%S')
+                else:
+                    # localiza o naive datetime como horário de SP
+                    h['data_hora'] = tz_br.localize(dh).strftime('%Y-%m-%dT%H:%M:%S')
+            except Exception:
+                # fallback: stringfiy
+                try:
+                    h['data_hora'] = str(dh)
+                except Exception:
+                    h['data_hora'] = None
         return jsonify(historico or [])
     except Exception as e:
         print(f"Erro ao buscar histórico de agendamentos: {e}")
@@ -317,7 +343,16 @@ def horarios_ocupados_massoterapeuta(massoterapeuta_id):
             """, (massoterapeuta_id,))
             rows = cursor.fetchall()
             tz_br = pytz.timezone('America/Sao_Paulo')
-            horarios = [{"data_hora": row[0].astimezone(tz_br).strftime("%Y-%m-%dT%H:%M:%S")} for row in rows]
+            horarios = []
+            for row in rows:
+                dh = row[0]
+                try:
+                    if hasattr(dh, 'tzinfo') and dh.tzinfo is not None:
+                        horarios.append({"data_hora": dh.astimezone(tz_br).strftime("%Y-%m-%dT%H:%M:%S")})
+                    else:
+                        horarios.append({"data_hora": tz_br.localize(dh).strftime("%Y-%m-%dT%H:%M:%S")})
+                except Exception:
+                    horarios.append({"data_hora": str(dh)})
         except Exception as e:
             print(f"Erro ao buscar horários ocupados: {e}")
         finally:

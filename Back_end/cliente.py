@@ -207,6 +207,15 @@ def cadastrar_agendamento(cliente_id, massoterapeuta_id, data_hora, sintomas=Non
         print("Erro: Horário fora do funcionamento da clínica (8:00 às 18:00)")
         return None
 
+    # Converter data_hora para horário local de São Paulo
+    try:
+        if hasattr(data_hora, 'astimezone') and data_hora.tzinfo is not None:
+            data_hora = data_hora.astimezone(tz_br).replace(tzinfo=None)
+        else:
+            pass
+    except Exception as e:
+        print(f"Erro ao normalizar data_hora para horário local: {e}")
+
     conn = get_connection()
     if conn:
         cursor = None
