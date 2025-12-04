@@ -424,6 +424,7 @@ def cancelar_agendamento_cliente(agendamento_id):
     except Exception as e:
         print(f"Erro ao cancelar agendamento: {e}")
         return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
+    # Fim cancelar_agendamento_cliente
 
 # -------------------------------
 # ROTA: Limpar histórico de agendamentos do cliente
